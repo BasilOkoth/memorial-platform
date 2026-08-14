@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Family Dashboard · {{ memorial.memorial_name }}{% endblock %}
+{% block body %}
+<main class="shell">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Family dashboard</p>
+      <h1>{{ memorial.memorial_name }}</h1>
+      <p>Customize your loved one's memorial and manage community tributes.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-light" href="{{ url_for('public_memorial', slug=memorial.slug) }}" target="_blank">Preview memorial</a>
+      <form method="post" action="{{ url_for('family_logout', slug=memorial.slug) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-light">Log out</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="dashboard-grid family-grid">
+    <section class="stack">
+      <article class="card">
+        <div class="section-heading">
+          <div><p class="eyebrow">Identity</p><h2>Portrait & photographs</h2></div>
+          <span class="status {% if memorial.is_published %}status-live{% endif %}">{% if memorial.is_published %}Published{% else %}Draft{% endif %}</span>
+        </div>
+
+        {% if portrait %}
+          <img class="dashboard-portrait" src="{{ url_for('media_asset', asset_id=portrait.id) }}" alt="Portrait">
+        {% endif %}
+
+        <form class="form compact-form" method="post" action="{{ url_for('upload_portrait', slug=memorial.slug) }}" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <label>Main portrait<input type="file" name="photo" accept="image/jpeg,image/png,image/webp" required></label>
+          <button class="btn btn-light">Upload portrait</button>
+        </form>
+
+        <hr class="soft-rule">
+
+        <form class="form compact-form" method="post" action="{{ url_for('upload_gallery', slug=memorial.slug) }}" enctype="multipart/form-data">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+          <label>Add gallery photographs<input type="file" name="photos" accept="image/jpeg,image/png,image/webp" multiple required></label>
+          <span class="hint">JPG, PNG or WebP. Up to 12 photos at a time, maximum 5 MB each.</span>
+          <button class="btn btn-light">Add to gallery</button>
+        </form>
+
+        {% if gallery %}
+        <div class="dashboard-gallery">
+          {% for image in gallery %}
+          <div class="dashboard-gallery-item">
+            <img src="{{ url_for('media_asset', asset_id=image.id) }}" alt="Gallery image">
+            <form method="post" action="{{ url_for('delete_media', slug=memorial.slug, asset_id=image.id) }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <button aria-label="Remove photo" title="Remove photo">×</button>
+            </form>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </article>
+
+      <article class="card">
+        <p class="eyebrow">Memorial content</p>
+        <h2>Story, funeral & family information</h2>
+
+        <form class="form" method="post" action="{{ url_for('save_family_settings', slug=memorial.slug) }}">
+          <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+
+          <div class="form-grid">
+            <label>Full name<input name="memorial_name" value="{{ memorial.memorial_name }}"></label>
+            <label>Theme
+              <select name="theme">
+                <option value="classic" {% if memorial.theme == 'classic' %}selected{% endif %}>Classic</option>
+                <option value="warm" {% if memorial.theme == 'warm' %}selected{% endif %}>Warm</option>
+                <option value="serene" {% if memorial.theme == 'serene' %}selected{% endif %}>Serene</option>
+              </select>
+            </label>
+            <label>Date of birth<input name="birth_date" value="{{ memorial.birth_date }}" placeholder="12 March 1955"></label>
+            <label>Date of passing<input name="death_date" value="{{ memorial.death_date }}" placeholder="2 August 2026"></label>
+          </div>
+
+          <label>Memorial message<input name="hero_message" value="{{ memorial.hero_message }}"></label>
+          <label>Life story / eulogy<textarea name="biography" rows="9">{{ memorial.biography }}</textarea></label>
+
+          <h3>Funeral information</h3>
+          <div class="form-grid">
+            <label>Date / programme<input name="burial_date" value="{{ memorial.burial_date }}"></label>
+            <label>Venue<input name="burial_venue" value="{{ memorial.burial_venue }}"></label>
+          </div>
+          <label>Google Maps link<input type="url" name="burial_map_url" value="{{ memorial.burial_map_url }}" placeholder="https://..."></label>
+          <label>Livestream link<input type="url" name="livestream_url" value="{{ memorial.livestream_url }}" placeholder="https://..."></label>
+
+          <h3>Family support</h3>
+          <div class="form-grid">
+            <label>M-Pesa number<input name="mpesa_number" value="{{ memorial.mpesa_number }}"></label>
+            <label>M-Pesa account name<input name="mpesa_name" value="{{ memorial.mpesa_name }}"></label>
+          </div>
+          <label>Contribution purpose<input name="contribution_purpose" value="{{ memorial.contribution_purpose }}"></label>
+          <label>WhatsApp group/contact link<input type="url" name="whatsapp_url" value="{{ memorial.whatsapp_url }}" placeholder="https://..."></label>
+
+          <h3>Family acknowledgement</h3>
+          <label>Thank-you message<textarea name="family_acknowledgement" rows="5">{{ memorial.family_acknowledgement }}</textarea></label>
+
+          <h3>Access & publishing</h3>
+          <label>Change family password <span class="hint">(leave blank to keep the current password)</span>
+            <input type="password" name="new_family_password" minlength="6">
+          </label>
+          <label class="checkbox"><input type="checkbox" name="is_published" {% if memorial.is_published %}checked{% endif %}> Publish this memorial publicly</label>
+
+          <button class="btn btn-primary">Save all changes</button>
+        </form>
+      </article>
+    </section>
+
+    <section class="stack">
+      <article class="card">
+        <p class="eyebrow">Community</p>
+        <h2>Tribute moderation</h2>
+        <p>{{ tributes|length }} total tribute{% if tributes|length != 1 %}s{% endif %}. Acknowledge messages with love, hide them, or remove them when necessary.</p>
+
+        {% if tributes %}
+        <div class="tribute-admin-list">
+          {% for tribute in tributes %}
+          <article class="tribute-admin" id="tribute-{{ tribute.id }}">
+            <div class="section-heading">
+              <div>
+                <strong>{{ tribute.participant_name }}</strong>
+                <small>{{ tribute.created_at.strftime('%d %b %Y, %H:%M') }}</small>
+              </div>
+              <span class="status {% if tribute.is_visible %}status-live{% endif %}">{% if tribute.is_visible %}Visible{% else %}Hidden{% endif %}</span>
+            </div>
+            <p>{{ tribute.message }}</p>
+            {% if tribute.is_acknowledged %}
+              <div class="love-note">♥ Acknowledged with love by the family</div>
+            {% endif %}
+            <div class="actions">
+              <form method="post" action="{{ url_for('acknowledge_tribute', slug=memorial.slug, tribute_id=tribute.id) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-light">{% if tribute.is_acknowledged %}Remove acknowledgement{% else %}Acknowledge{% endif %}</button>
+              </form>
+              <form method="post" action="{{ url_for('toggle_tribute', slug=memorial.slug, tribute_id=tribute.id) }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-light">{% if tribute.is_visible %}Hide{% else %}Show{% endif %}</button>
+              </form>
+              <form method="post" action="{{ url_for('delete_tribute', slug=memorial.slug, tribute_id=tribute.id) }}" onsubmit="return confirm('Delete this tribute permanently?')">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-danger">Delete</button>
+              </form>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+        {% else %}
+          <div class="empty">No tributes have been submitted yet.</div>
+        {% endif %}
+      </article>
+    </section>
+  </div>
+</main>
+{% endblock %}

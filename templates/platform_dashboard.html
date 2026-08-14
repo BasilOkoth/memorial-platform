@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Platform Dashboard{% endblock %}
+{% block body %}
+<main class="shell">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">Platform owner</p>
+      <h1>Memorial dashboard</h1>
+      <p>Create a memorial and give the family their private dashboard password.</p>
+    </div>
+    <form method="post" action="{{ url_for('platform_logout') }}">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-light">Log out</button>
+    </form>
+  </header>
+
+  <section class="dashboard-grid">
+    <article class="card">
+      <p class="eyebrow">New memorial</p>
+      <h2>Create memorial</h2>
+      <form class="form" method="post" action="{{ url_for('create_memorial') }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <label>Person's full name<input name="memorial_name" required placeholder="e.g. Mary Achieng Ouma"></label>
+        <label>Memorial link
+          <div class="prefix"><span>/m/</span><input name="slug" placeholder="mary-achieng-ouma"></div>
+        </label>
+        <label>Family password<input type="password" name="family_password" minlength="6" required></label>
+        <p class="hint">The memorial starts as a draft. The family can publish it after adding their content.</p>
+        <button class="btn btn-primary">Create memorial</button>
+      </form>
+    </article>
+
+    <article class="card memorial-list-card">
+      <div class="section-heading">
+        <div><p class="eyebrow">Portfolio</p><h2>{{ memorials|length }} memorial{% if memorials|length != 1 %}s{% endif %}</h2></div>
+      </div>
+
+      {% if memorials %}
+        <div class="memorial-list">
+          {% for item in memorials %}
+          <section class="memorial-list-item">
+            <div class="memorial-list-main">
+              <strong>{{ item.memorial_name }}</strong>
+              <span>/m/{{ item.slug }}</span>
+              <small>{{ tribute_counts[item.id] }} tributes · {% if item.is_published %}Published{% else %}Draft{% endif %}</small>
+            </div>
+            <div class="actions">
+              <a class="btn btn-light" href="{{ url_for('public_memorial', slug=item.slug) }}" target="_blank">View</a>
+              <a class="btn btn-primary" href="{{ url_for('family_dashboard', slug=item.slug) }}">Family dashboard</a>
+            </div>
+            <details class="owner-tools">
+              <summary>Owner tools</summary>
+              <div class="owner-tools-grid">
+                <form method="post" action="{{ url_for('platform_toggle_publish', memorial_id=item.id) }}">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-light">{% if item.is_published %}Unpublish{% else %}Publish{% endif %}</button>
+                </form>
+                <form method="post" action="{{ url_for('platform_reset_family_password', memorial_id=item.id) }}" class="inline-reset">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <input type="password" name="new_password" minlength="6" placeholder="New family password" required>
+                  <button class="btn btn-light">Reset password</button>
+                </form>
+                <form method="post" action="{{ url_for('platform_delete_memorial', memorial_id=item.id) }}" onsubmit="return confirm('Delete this memorial and all its tributes/photos permanently?')">
+                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-danger">Delete memorial</button>
+                </form>
+              </div>
+            </details>
+          </section>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">Your first family memorial will appear here.</div>
+      {% endif %}
+    </article>
+  </section>
+</main>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Memorials · Remember with Love{% endblock %}
+{% block body %}
+<main class="landing">
+  <nav class="landing-nav">
+    <div class="brand"><span class="brand-mark">♥</span> Memorials</div>
+    <a class="btn btn-light" href="{{ url_for('platform_login') }}">Platform login</a>
+  </nav>
+
+  <section class="landing-hero">
+    <p class="eyebrow">Remember · Gather · Preserve</p>
+    <h1>A beautiful digital home for every life remembered.</h1>
+    <p class="landing-copy">Create a respectful memorial where families can share funeral information, receive tributes, preserve photographs and acknowledge the people who stood with them.</p>
+  </section>
+
+  <section class="feature-grid">
+    <article><span>01</span><h2>One memorial link</h2><p>Share one simple page with relatives, friends and communities.</p></article>
+    <article><span>02</span><h2>Family controlled</h2><p>Every family receives a private dashboard to manage its own memorial.</p></article>
+    <article><span>03</span><h2>Memories preserved</h2><p>Collect tributes and photographs in one lasting remembrance space.</p></article>
+  </section>
+</main>
+<footer class="site-footer">Built with care · {{ current_year }}</footer>
+{% endblock %}

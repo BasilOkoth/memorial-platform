@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}In Loving Memory of {{ memorial.memorial_name }}{% endblock %}
+{% block body %}
+<div class="memorial-page theme-{{ memorial.theme }}">
+  <header class="memorial-hero">
+    <div class="memorial-hero-inner">
+      {% if portrait %}
+        <img class="memorial-portrait" src="{{ url_for('media_asset', asset_id=portrait.id) }}" alt="Portrait of {{ memorial.memorial_name }}">
+      {% else %}
+        <div class="memorial-portrait memorial-placeholder">♥</div>
+      {% endif %}
+      <p class="memorial-kicker">In loving memory of</p>
+      <h1>{{ memorial.memorial_name }}</h1>
+      {% if memorial.birth_date or memorial.death_date %}
+        <p class="memorial-dates">{{ memorial.birth_date }}{% if memorial.birth_date and memorial.death_date %} — {% endif %}{{ memorial.death_date }}</p>
+      {% endif %}
+      <p class="memorial-message">{{ memorial.hero_message }}</p>
+      {% if not memorial.is_published %}
+        <span class="preview-pill">Private preview · not yet published</span>
+      {% endif %}
+    </div>
+  </header>
+
+  <main class="memorial-main">
+    {% if memorial.biography %}
+    <section class="memorial-section">
+      <p class="eyebrow">A life remembered</p>
+      <h2>Heritage & story</h2>
+      <div class="memorial-story">{{ memorial.biography | e | replace('\n', '<br>') | safe }}</div>
+    </section>
+    {% endif %}
+
+    {% if memorial.burial_date or memorial.burial_venue or memorial.burial_map_url or memorial.livestream_url %}
+    <section class="memorial-section">
+      <p class="eyebrow">Farewell</p>
+      <h2>Funeral information</h2>
+      {% if memorial.burial_date %}<p><strong>Date / programme:</strong> {{ memorial.burial_date }}</p>{% endif %}
+      {% if memorial.burial_venue %}<p><strong>Venue:</strong> {{ memorial.burial_venue }}</p>{% endif %}
+      <div class="actions">
+        {% if memorial.burial_map_url %}<a class="btn btn-light" href="{{ memorial.burial_map_url }}" target="_blank" rel="noopener">Get directions</a>{% endif %}
+        {% if memorial.livestream_url %}<a class="btn btn-primary" href="{{ memorial.livestream_url }}" target="_blank" rel="noopener">Watch livestream</a>{% endif %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if gallery %}
+    <section class="memorial-section">
+      <p class="eyebrow">Memories</p>
+      <h2>Photo gallery</h2>
+      <div class="public-gallery">
+        {% for image in gallery %}
+          <img src="{{ url_for('media_asset', asset_id=image.id) }}" alt="Memory of {{ memorial.memorial_name }}" loading="lazy">
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if memorial.mpesa_number or memorial.whatsapp_url %}
+    <section class="memorial-section support-card">
+      <p class="eyebrow">Stand with the family</p>
+      <h2>Family support</h2>
+      {% if memorial.mpesa_number %}
+        <div class="support-number">{{ memorial.mpesa_number }}</div>
+        {% if memorial.mpesa_name %}<p><strong>{{ memorial.mpesa_name }}</strong></p>{% endif %}
+        {% if memorial.contribution_purpose %}<p>{{ memorial.contribution_purpose }}</p>{% endif %}
+      {% endif %}
+      <div class="actions centered">
+        {% if memorial.whatsapp_url %}<a class="btn btn-primary" href="{{ memorial.whatsapp_url }}" target="_blank" rel="noopener">Family WhatsApp</a>{% endif %}
+        <a class="btn btn-light" href="{{ whatsapp_share_url }}" target="_blank" rel="noopener">Share memorial</a>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="memorial-section" id="tributes">
+      <p class="eyebrow">Condolence book</p>
+      <h2>Tributes & candle wall</h2>
+
+      {% if memorial.is_published %}
+      <form class="form tribute-form" method="post" action="{{ url_for('add_tribute', slug=memorial.slug) }}">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off">
+        <label>Your name<input name="participant_name" maxlength="90" placeholder="Your name"></label>
+        <label>Your tribute<textarea name="message" maxlength="900" rows="4" placeholder="Share a memory, prayer or message of comfort..." required></textarea></label>
+        <button class="btn btn-primary">Light a candle & leave tribute</button>
+      </form>
+      {% endif %}
+
+      <div class="tribute-wall">
+        {% for tribute in tributes %}
+        <article class="tribute-card" id="tribute-{{ tribute.id }}">
+          <div class="candle">🕯️</div>
+          <div>
+            <strong>{{ tribute.participant_name }}</strong>
+            <p>{{ tribute.message }}</p>
+            {% if tribute.is_acknowledged %}
+              <span class="love-note">♥ Acknowledged with love by the family</span>
+            {% endif %}
+          </div>
+        </article>
+        {% else %}
+          <div class="empty">No tributes yet. This remembrance wall is ready to receive them.</div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% if memorial.family_acknowledgement %}
+    <section class="memorial-section family-thanks">
+      <p class="eyebrow">From the family</p>
+      <h2>With heartfelt gratitude</h2>
+      <p>{{ memorial.family_acknowledgement }}</p>
+    </section>
+    {% endif %}
+  </main>
+
+  <footer class="memorial-footer">
+    <span>Forever remembered.</span>
+    <a href="{{ url_for('family_login', slug=memorial.slug) }}">Family access</a>
+  </footer>
+</div>
+{% endblock %}
