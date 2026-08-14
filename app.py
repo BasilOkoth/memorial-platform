@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from io import BytesIO
 import hmac
 import os
 import re
@@ -22,6 +23,7 @@ from flask import (
     request,
     session,
     url_for,
+    send_file,
 )
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Boolean, DateTime, ForeignKey, LargeBinary, String, Text, func, select
@@ -121,6 +123,14 @@ class MediaAsset(db.Model):
     )
 
 
+
+class MemorialEvent(db.Model):
+    __tablename__ = "memorial_events"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    memorial_id: Mapped[int] = mapped_column(ForeignKey("memorials.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    service_datetime: Mapped[str] = mapped_column(String(40), default="", nullable=False)
+    timezone_offset: Mapped[str] = mapped_column(String(6), default="+03:00", nullable=False)
+
 def database_uri() -> str:
     value = os.getenv("DATABASE_URL", "").strip()
     if value:
@@ -142,7 +152,7 @@ def create_app() -> Flask:
         SQLALCHEMY_DATABASE_URI=database_uri(),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
-        MAX_CONTENT_LENGTH=8 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=25 * 1024 * 1024,
     )
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
@@ -240,6 +250,25 @@ def valid_image_upload(file) -> tuple[bytes, str, str] | None:
 
     filename = normalize_text(file.filename, 255) or "photo"
     return data, content_type, filename
+
+
+def valid_pdf_upload(file) -> tuple[bytes, str, str] | None:
+    if not file or not file.filename:
+        return None
+    filename = normalize_text(file.filename, 255) or "document.pdf"
+    data = file.read()
+    if not data or len(data) > 20 * 1024 * 1024 or not data.startswith(b"%PDF"):
+        return None
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+    return data, "application/pdf", filename
+
+
+def get_document(memorial_id: int, kind: str) -> MediaAsset | None:
+    return db.session.scalar(
+        select(MediaAsset).where(MediaAsset.memorial_id == memorial_id, MediaAsset.kind == kind)
+        .order_by(MediaAsset.created_at.desc()).limit(1)
+    )
 
 
 def whatsapp_share_url(memorial: Memorial) -> str:
@@ -438,14 +467,30 @@ def register_routes(app: Flask) -> None:
             .limit(1)
         )
 
+        event = db.session.scalar(select(MemorialEvent).where(MemorialEvent.memorial_id == memorial.id))
+        eulogy = get_document(memorial.id, "eulogy")
+        programme = get_document(memorial.id, "programme")
+
         return render_template(
-            "memorial.html",
-            memorial=memorial,
-            tributes=tributes,
-            gallery=gallery,
-            portrait=portrait,
+            "memorial.html", memorial=memorial, tributes=tributes, gallery=gallery,
+            portrait=portrait, event=event, eulogy=eulogy, programme=programme,
             whatsapp_share_url=whatsapp_share_url(memorial),
         )
+
+    @app.get("/m/<slug>/documents/<kind>")
+    def public_document(slug: str, kind: str):
+        memorial = memorial_by_slug(slug)
+        can_preview = memorial.id in family_memorial_ids() or session.get("platform_admin")
+        if not memorial.is_published and not can_preview:
+            abort(404)
+        if kind not in {"eulogy", "programme"}:
+            abort(404)
+        asset = get_document(memorial.id, kind)
+        if not asset:
+            abort(404)
+        return send_file(BytesIO(asset.data), mimetype="application/pdf",
+                         as_attachment=request.args.get("download") == "1",
+                         download_name=asset.filename)
 
     @app.post("/m/<slug>/tributes")
     def add_tribute(slug: str):
@@ -538,12 +583,11 @@ def register_routes(app: Flask) -> None:
             .limit(1)
         )
 
+        event = db.session.scalar(select(MemorialEvent).where(MemorialEvent.memorial_id == memorial.id))
         return render_template(
-            "family_dashboard.html",
-            memorial=memorial,
-            tributes=tributes,
-            gallery=gallery,
-            portrait=portrait,
+            "family_dashboard.html", memorial=memorial, tributes=tributes, gallery=gallery,
+            portrait=portrait, event=event, eulogy=get_document(memorial.id, "eulogy"),
+            programme=get_document(memorial.id, "programme"),
         )
 
     @app.post("/m/<slug>/family/settings")
@@ -579,6 +623,21 @@ def register_routes(app: Flask) -> None:
         memorial.theme = theme if theme in {"classic", "warm", "serene"} else "classic"
         memorial.is_published = request.form.get("is_published") == "on"
 
+        service_datetime = normalize_text(request.form.get("service_datetime"), 40)
+        timezone_offset = request.form.get("service_timezone", "+03:00")
+        allowed_offsets = {"-05:00","-04:00","-03:00","-02:00","-01:00","+00:00","+01:00","+02:00","+03:00","+04:00","+05:00"}
+        if timezone_offset not in allowed_offsets:
+            timezone_offset = "+03:00"
+        event = db.session.scalar(select(MemorialEvent).where(MemorialEvent.memorial_id == memorial.id))
+        if service_datetime:
+            if event is None:
+                db.session.add(MemorialEvent(memorial_id=memorial.id, service_datetime=service_datetime, timezone_offset=timezone_offset))
+            else:
+                event.service_datetime = service_datetime
+                event.timezone_offset = timezone_offset
+        elif event is not None:
+            db.session.delete(event)
+
         new_password = request.form.get("new_family_password", "")
         if new_password:
             if len(new_password) < 6:
@@ -588,6 +647,36 @@ def register_routes(app: Flask) -> None:
 
         db.session.commit()
         flash("Memorial settings saved.", "success")
+        return redirect(url_for("family_dashboard", slug=slug))
+
+    @app.post("/m/<slug>/family/documents/<kind>/upload")
+    @family_required
+    def upload_document(slug: str, memorial: Memorial, kind: str):
+        validate_csrf()
+        if kind not in {"eulogy", "programme"}:
+            abort(404)
+        upload = valid_pdf_upload(request.files.get("document"))
+        if not upload:
+            flash("Upload a valid PDF smaller than 20 MB.", "warning")
+            return redirect(url_for("family_dashboard", slug=slug))
+        data, content_type, filename = upload
+        db.session.execute(MediaAsset.__table__.delete().where(MediaAsset.memorial_id == memorial.id, MediaAsset.kind == kind))
+        db.session.add(MediaAsset(memorial_id=memorial.id, kind=kind, filename=filename, content_type=content_type, data=data))
+        db.session.commit()
+        flash(("Eulogy" if kind == "eulogy" else "Funeral programme") + " uploaded successfully.", "success")
+        return redirect(url_for("family_dashboard", slug=slug))
+
+    @app.post("/m/<slug>/family/documents/<kind>/delete")
+    @family_required
+    def delete_document(slug: str, memorial: Memorial, kind: str):
+        validate_csrf()
+        if kind not in {"eulogy", "programme"}:
+            abort(404)
+        asset = get_document(memorial.id, kind)
+        if asset:
+            db.session.delete(asset)
+            db.session.commit()
+            flash("Document removed.", "success")
         return redirect(url_for("family_dashboard", slug=slug))
 
     @app.post("/m/<slug>/family/upload-portrait")

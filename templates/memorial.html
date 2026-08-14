@@ -3,6 +3,8 @@
 {% block body %}
 <div class="memorial-page theme-{{ memorial.theme }}">
   <header class="memorial-hero">
+    <div class="soft-light soft-light-one"></div>
+    <div class="soft-light soft-light-two"></div>
     <div class="memorial-hero-inner">
       {% if portrait %}
         <img class="memorial-portrait" src="{{ url_for('media_asset', asset_id=portrait.id) }}" alt="Portrait of {{ memorial.memorial_name }}">
@@ -15,9 +17,21 @@
         <p class="memorial-dates">{{ memorial.birth_date }}{% if memorial.birth_date and memorial.death_date %} — {% endif %}{{ memorial.death_date }}</p>
       {% endif %}
       <p class="memorial-message">{{ memorial.hero_message }}</p>
-      {% if not memorial.is_published %}
-        <span class="preview-pill">Private preview · not yet published</span>
+
+      {% if event and event.service_datetime %}
+      <section class="service-countdown">
+        <p class="countdown-label">Until we gather to honour this life</p>
+        <div class="countdown-grid" id="service-countdown" data-target="{{ event.service_datetime }}{{ event.timezone_offset }}">
+          <div><strong id="countdown-days">00</strong><span>Days</span></div>
+          <div><strong id="countdown-hours">00</strong><span>Hours</span></div>
+          <div><strong id="countdown-minutes">00</strong><span>Minutes</span></div>
+          <div class="seconds-tile"><strong id="countdown-seconds">00</strong><span>Seconds</span></div>
+        </div>
+        <p class="countdown-finished" id="countdown-finished" hidden>The service time has arrived. We remember with love.</p>
+      </section>
       {% endif %}
+
+      {% if not memorial.is_published %}<span class="preview-pill">Private preview · not yet published</span>{% endif %}
     </div>
   </header>
 
@@ -30,91 +44,139 @@
     </section>
     {% endif %}
 
+    {% if eulogy or programme %}
+    <section class="memorial-section document-section">
+      <p class="eyebrow">Life & farewell</p>
+      <h2>Memorial documents</h2>
+      <p class="document-intro">Read or keep the documents prepared by the family to honour this life.</p>
+      <div class="public-document-grid">
+        {% if eulogy %}
+        <article class="public-document-card">
+          <span class="document-icon">❧</span>
+          <div><strong>Full Eulogy</strong><span>{{ eulogy.filename }}</span></div>
+          <div class="actions">
+            <a class="btn memorial-btn-primary" href="{{ url_for('public_document', slug=memorial.slug, kind='eulogy') }}" target="_blank">Read eulogy</a>
+            <a class="btn memorial-btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind='eulogy', download=1) }}">Download PDF</a>
+          </div>
+        </article>
+        {% endif %}
+        {% if programme %}
+        <article class="public-document-card">
+          <span class="document-icon">✦</span>
+          <div><strong>Funeral Programme</strong><span>{{ programme.filename }}</span></div>
+          <div class="actions">
+            <a class="btn memorial-btn-primary" href="{{ url_for('public_document', slug=memorial.slug, kind='programme') }}" target="_blank">Read programme</a>
+            <a class="btn memorial-btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind='programme', download=1) }}">Download PDF</a>
+          </div>
+        </article>
+        {% endif %}
+      </div>
+    </section>
+    {% endif %}
+
     {% if memorial.burial_date or memorial.burial_venue or memorial.burial_map_url or memorial.livestream_url %}
     <section class="memorial-section">
-      <p class="eyebrow">Farewell</p>
-      <h2>Funeral information</h2>
+      <p class="eyebrow">Farewell</p><h2>Funeral information</h2>
       {% if memorial.burial_date %}<p><strong>Date / programme:</strong> {{ memorial.burial_date }}</p>{% endif %}
       {% if memorial.burial_venue %}<p><strong>Venue:</strong> {{ memorial.burial_venue }}</p>{% endif %}
       <div class="actions">
-        {% if memorial.burial_map_url %}<a class="btn btn-light" href="{{ memorial.burial_map_url }}" target="_blank" rel="noopener">Get directions</a>{% endif %}
-        {% if memorial.livestream_url %}<a class="btn btn-primary" href="{{ memorial.livestream_url }}" target="_blank" rel="noopener">Watch livestream</a>{% endif %}
+        {% if memorial.burial_map_url %}<a class="btn memorial-btn-light" href="{{ memorial.burial_map_url }}" target="_blank" rel="noopener">Get directions</a>{% endif %}
+        {% if memorial.livestream_url %}<a class="btn memorial-btn-primary" href="{{ memorial.livestream_url }}" target="_blank" rel="noopener">Watch livestream</a>{% endif %}
       </div>
     </section>
     {% endif %}
 
     {% if gallery %}
-    <section class="memorial-section">
-      <p class="eyebrow">Memories</p>
-      <h2>Photo gallery</h2>
-      <div class="public-gallery">
-        {% for image in gallery %}
-          <img src="{{ url_for('media_asset', asset_id=image.id) }}" alt="Memory of {{ memorial.memorial_name }}" loading="lazy">
-        {% endfor %}
-      </div>
+    <section class="memorial-section"><p class="eyebrow">Memories</p><h2>Photo gallery</h2>
+      <div class="public-gallery">{% for image in gallery %}<img src="{{ url_for('media_asset', asset_id=image.id) }}" alt="Memory of {{ memorial.memorial_name }}" loading="lazy">{% endfor %}</div>
     </section>
     {% endif %}
 
     {% if memorial.mpesa_number or memorial.whatsapp_url %}
     <section class="memorial-section support-card">
-      <p class="eyebrow">Stand with the family</p>
-      <h2>Family support</h2>
-      {% if memorial.mpesa_number %}
-        <div class="support-number">{{ memorial.mpesa_number }}</div>
-        {% if memorial.mpesa_name %}<p><strong>{{ memorial.mpesa_name }}</strong></p>{% endif %}
-        {% if memorial.contribution_purpose %}<p>{{ memorial.contribution_purpose }}</p>{% endif %}
-      {% endif %}
+      <p class="eyebrow">Stand with the family</p><h2>Family support</h2>
+      {% if memorial.mpesa_number %}<div class="support-number">{{ memorial.mpesa_number }}</div>{% endif %}
+      {% if memorial.mpesa_name %}<p><strong>{{ memorial.mpesa_name }}</strong></p>{% endif %}
+      {% if memorial.contribution_purpose %}<p>{{ memorial.contribution_purpose }}</p>{% endif %}
       <div class="actions centered">
-        {% if memorial.whatsapp_url %}<a class="btn btn-primary" href="{{ memorial.whatsapp_url }}" target="_blank" rel="noopener">Family WhatsApp</a>{% endif %}
-        <a class="btn btn-light" href="{{ whatsapp_share_url }}" target="_blank" rel="noopener">Share memorial</a>
+        {% if memorial.whatsapp_url %}<a class="btn memorial-btn-primary" href="{{ memorial.whatsapp_url }}" target="_blank" rel="noopener">Family WhatsApp</a>{% endif %}
+        <a class="btn memorial-btn-light" href="{{ whatsapp_share_url }}" target="_blank" rel="noopener">Share memorial</a>
       </div>
     </section>
     {% endif %}
 
-    <section class="memorial-section" id="tributes">
-      <p class="eyebrow">Condolence book</p>
-      <h2>Tributes & candle wall</h2>
-
+    <section class="memorial-section candle-wall-section" id="tributes">
+      <div class="candle-wall-heading">
+        <div><p class="eyebrow">Condolence book</p><h2>Tributes & candle wall</h2></div>
+        <div class="candle-wall-count"><span class="tiny-live-flame"></span>{{ tributes|length }} candles glowing</div>
+      </div>
       {% if memorial.is_published %}
       <form class="form tribute-form" method="post" action="{{ url_for('add_tribute', slug=memorial.slug) }}">
         <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off">
         <label>Your name<input name="participant_name" maxlength="90" placeholder="Your name"></label>
         <label>Your tribute<textarea name="message" maxlength="900" rows="4" placeholder="Share a memory, prayer or message of comfort..." required></textarea></label>
-        <button class="btn btn-primary">Light a candle & leave tribute</button>
+        <button class="btn memorial-btn-primary">Light a candle & leave tribute</button>
       </form>
       {% endif %}
 
       <div class="tribute-wall">
         {% for tribute in tributes %}
-        <article class="tribute-card" id="tribute-{{ tribute.id }}">
-          <div class="candle">🕯️</div>
-          <div>
+        <article class="tribute-card premium-candle-card" id="tribute-{{ tribute.id }}">
+          <div class="live-candle" aria-hidden="true" style="--candle-delay:-{{ (tribute.id % 7) * 0.17 }}s">
+            <span class="flame"><span class="flame-core"></span></span>
+            <span class="spark spark-one"></span><span class="spark spark-two"></span><span class="spark spark-three"></span>
+            <span class="wick"></span><span class="wax"><span class="wax-drip"></span></span>
+          </div>
+          <div class="tribute-copy">
             <strong>{{ tribute.participant_name }}</strong>
             <p>{{ tribute.message }}</p>
-            {% if tribute.is_acknowledged %}
-              <span class="love-note">♥ Acknowledged with love by the family</span>
-            {% endif %}
+            {% if tribute.is_acknowledged %}<span class="love-note">♥ Acknowledged with love by the family</span>{% endif %}
           </div>
         </article>
         {% else %}
-          <div class="empty">No tributes yet. This remembrance wall is ready to receive them.</div>
+        <div class="empty memorial-empty">No tributes yet. This remembrance wall is ready to receive the first candle.</div>
         {% endfor %}
       </div>
     </section>
 
     {% if memorial.family_acknowledgement %}
-    <section class="memorial-section family-thanks">
-      <p class="eyebrow">From the family</p>
-      <h2>With heartfelt gratitude</h2>
-      <p>{{ memorial.family_acknowledgement }}</p>
-    </section>
+    <section class="memorial-section family-thanks"><p class="eyebrow">From the family</p><h2>With heartfelt gratitude</h2><p>{{ memorial.family_acknowledgement }}</p></section>
     {% endif %}
   </main>
 
-  <footer class="memorial-footer">
-    <span>Forever remembered.</span>
-    <a href="{{ url_for('family_login', slug=memorial.slug) }}">Family access</a>
-  </footer>
+  <footer class="memorial-footer"><span>Forever remembered.</span><a href="{{ url_for('family_login', slug=memorial.slug) }}">Family access</a></footer>
 </div>
+
+{% if event and event.service_datetime %}
+<script>
+(() => {
+  const box = document.getElementById("service-countdown");
+  if (!box) return;
+  const target = new Date(box.dataset.target).getTime();
+  const d = document.getElementById("countdown-days");
+  const h = document.getElementById("countdown-hours");
+  const m = document.getElementById("countdown-minutes");
+  const s = document.getElementById("countdown-seconds");
+  const finished = document.getElementById("countdown-finished");
+  const pad = n => String(n).padStart(2, "0");
+  function tick() {
+    const left = target - Date.now();
+    if (!Number.isFinite(target) || left <= 0) {
+      d.textContent=h.textContent=m.textContent=s.textContent="00";
+      finished.hidden=false;
+      return false;
+    }
+    const total = Math.floor(left/1000);
+    d.textContent=pad(Math.floor(total/86400));
+    h.textContent=pad(Math.floor((total%86400)/3600));
+    m.textContent=pad(Math.floor((total%3600)/60));
+    s.textContent=pad(total%60);
+    return true;
+  }
+  tick();
+  const timer = setInterval(() => { if (!tick()) clearInterval(timer); }, 1000);
+})();
+</script>
+{% endif %}
 {% endblock %}

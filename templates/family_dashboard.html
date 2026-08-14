@@ -60,6 +60,33 @@
       </article>
 
       <article class="card">
+        <p class="eyebrow">Documents</p>
+        <h2>Eulogy & funeral programme</h2>
+        <p class="hint">Keep the short life story on the page, then upload the full documents as PDFs.</p>
+        <div class="document-manager">
+          {% for kind, label, asset in [('eulogy','Full eulogy',eulogy),('programme','Funeral programme',programme)] %}
+          <section class="document-upload-box">
+            <div><strong>{{ label }}</strong><span class="hint">{{ asset.filename if asset else 'No PDF uploaded yet' }}</span></div>
+            {% if asset %}
+            <div class="actions">
+              <a class="btn btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind=kind) }}" target="_blank">Read</a>
+              <a class="btn btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind=kind, download=1) }}">Download</a>
+              <form method="post" action="{{ url_for('delete_document', slug=memorial.slug, kind=kind) }}" onsubmit="return confirm('Remove this document?')">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="btn btn-danger">Remove</button>
+              </form>
+            </div>
+            {% endif %}
+            <form class="form compact-form" method="post" action="{{ url_for('upload_document', slug=memorial.slug, kind=kind) }}" enctype="multipart/form-data">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <label>{% if asset %}Replace PDF{% else %}Upload PDF{% endif %}<input type="file" name="document" accept="application/pdf,.pdf" required></label>
+              <button class="btn btn-light">{% if asset %}Replace{% else %}Upload{% endif %} {{ label|lower }}</button>
+            </form>
+          </section>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card">
         <p class="eyebrow">Memorial content</p>
         <h2>Story, funeral & family information</h2>
 
@@ -80,13 +107,25 @@
           </div>
 
           <label>Memorial message<input name="hero_message" value="{{ memorial.hero_message }}"></label>
-          <label>Life story / eulogy<textarea name="biography" rows="9">{{ memorial.biography }}</textarea></label>
+          <label>Short life story / biography<textarea name="biography" rows="7" placeholder="Share a concise story of the person’s life, character, family and legacy...">{{ memorial.biography }}</textarea></label>
 
           <h3>Funeral information</h3>
           <div class="form-grid">
-            <label>Date / programme<input name="burial_date" value="{{ memorial.burial_date }}"></label>
+            <label>Funeral date / programme note<input name="burial_date" value="{{ memorial.burial_date }}" placeholder="Saturday, 22 August 2026"></label>
             <label>Venue<input name="burial_venue" value="{{ memorial.burial_venue }}"></label>
           </div>
+          <div class="form-grid">
+            <label>Exact service date & time<input type="datetime-local" name="service_datetime" value="{{ event.service_datetime if event else '' }}"></label>
+            <label>Time zone
+              <select name="service_timezone">
+                {% set tz = event.timezone_offset if event else '+03:00' %}
+                {% for value, label in [('+00:00','UTC ±00:00'),('+01:00','UTC +01:00'),('+02:00','UTC +02:00'),('+03:00','UTC +03:00 (East Africa)'),('+04:00','UTC +04:00'),('+05:00','UTC +05:00'),('-01:00','UTC -01:00'),('-02:00','UTC -02:00'),('-03:00','UTC -03:00'),('-04:00','UTC -04:00'),('-05:00','UTC -05:00')] %}
+                <option value="{{ value }}" {% if tz == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+          <span class="hint">This powers the live public countdown down to the second.</span>
           <label>Google Maps link<input type="url" name="burial_map_url" value="{{ memorial.burial_map_url }}" placeholder="https://..."></label>
           <label>Livestream link<input type="url" name="livestream_url" value="{{ memorial.livestream_url }}" placeholder="https://..."></label>
 
