@@ -1,182 +1,1307 @@
 {% extends "base.html" %}
-{% block title %}In Loving Memory of {{ memorial.memorial_name }}{% endblock %}
+
+{% block title %}
+In Loving Memory of {{ memorial.memorial_name }}
+{% endblock %}
+
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='memorial-premium.css') }}"
+>
+{% endblock %}
+
 {% block body %}
-<div class="memorial-page theme-{{ memorial.theme }}">
-  <header class="memorial-hero">
-    <div class="soft-light soft-light-one"></div>
-    <div class="soft-light soft-light-two"></div>
-    <div class="memorial-hero-inner">
-      {% if portrait %}
-        <img class="memorial-portrait" src="{{ url_for('media_asset', asset_id=portrait.id) }}" alt="Portrait of {{ memorial.memorial_name }}">
-      {% else %}
-        <div class="memorial-portrait memorial-placeholder">♥</div>
-      {% endif %}
-      <p class="memorial-kicker">In loving memory of</p>
-      <h1>{{ memorial.memorial_name }}</h1>
-      {% if memorial.birth_date or memorial.death_date %}
-        <p class="memorial-dates">{{ memorial.birth_date }}{% if memorial.birth_date and memorial.death_date %} — {% endif %}{{ memorial.death_date }}</p>
-      {% endif %}
-      <p class="memorial-message">{{ memorial.hero_message }}</p>
 
-      {% if event and event.service_datetime %}
-      <section class="service-countdown">
-        <p class="countdown-label">Until we gather to honour this life</p>
-        <div class="countdown-grid" id="service-countdown" data-target="{{ event.service_datetime }}{{ event.timezone_offset }}">
-          <div><strong id="countdown-days">00</strong><span>Days</span></div>
-          <div><strong id="countdown-hours">00</strong><span>Hours</span></div>
-          <div><strong id="countdown-minutes">00</strong><span>Minutes</span></div>
-          <div class="seconds-tile"><strong id="countdown-seconds">00</strong><span>Seconds</span></div>
+<div class="premium-memorial theme-{{ memorial.theme }}">
+
+  <!-- =========================================
+       HERO
+  ========================================== -->
+  <header class="mm-hero">
+
+    <div class="mm-glow mm-glow-one"></div>
+    <div class="mm-glow mm-glow-two"></div>
+
+    <div class="mm-hero-inner">
+
+      <!-- Portrait -->
+      <div class="mm-portrait-wrap">
+
+        {% if portrait %}
+
+          <img
+            class="mm-portrait"
+            src="{{ url_for('media_asset', asset_id=portrait.id) }}"
+            alt="Portrait of {{ memorial.memorial_name }}"
+          >
+
+        {% else %}
+
+          <div class="mm-portrait-placeholder">
+            ♥
+          </div>
+
+        {% endif %}
+
+        <span
+          class="mm-portrait-ring"
+          aria-hidden="true"
+        ></span>
+
+      </div>
+
+
+      <!-- Hero information -->
+      <div class="mm-hero-copy">
+
+        <p class="mm-eyebrow">
+          In loving memory
+        </p>
+
+        <h1>
+          {{ memorial.memorial_name }}
+        </h1>
+
+
+        {% if memorial.birth_date or memorial.death_date %}
+
+          <p class="mm-dates">
+
+            {{ memorial.birth_date }}
+
+            {% if memorial.birth_date and memorial.death_date %}
+              —
+            {% endif %}
+
+            {{ memorial.death_date }}
+
+          </p>
+
+        {% endif %}
+
+
+        <p class="mm-message">
+          {{ memorial.hero_message }}
+        </p>
+
+
+        <!-- Hero actions -->
+        <div class="mm-actions">
+
+          <a
+            class="mm-button mm-button-gold"
+            href="#leave-tribute"
+          >
+            Leave a tribute
+          </a>
+
+
+          {% if eulogy %}
+
+            <a
+              class="mm-button mm-button-dark"
+              href="{{ url_for(
+                'public_document',
+                slug=memorial.slug,
+                kind='eulogy'
+              ) }}"
+              target="_blank"
+              rel="noopener"
+            >
+              Read Eulogy
+            </a>
+
+          {% endif %}
+
+
+          {% if memorial.livestream_url %}
+
+            <a
+              class="mm-button mm-button-gold"
+              href="{{ memorial.livestream_url }}"
+              target="_blank"
+              rel="noopener"
+            >
+              Watch Funeral Live
+            </a>
+
+          {% endif %}
+
+
+          {% if memorial.whatsapp_url %}
+
+            <a
+              class="mm-button mm-button-whatsapp"
+              href="{{ memorial.whatsapp_url }}"
+              target="_blank"
+              rel="noopener"
+            >
+              Family WhatsApp
+            </a>
+
+          {% endif %}
+
         </div>
-        <p class="countdown-finished" id="countdown-finished" hidden>The service time has arrived. We remember with love.</p>
-      </section>
-      {% endif %}
 
-      {% if not memorial.is_published %}<span class="preview-pill">Private preview · not yet published</span>{% endif %}
+
+        <!-- Tribute count -->
+        <a
+          class="mm-tribute-stat"
+          href="#candle-wall"
+        >
+
+          <strong>
+            {{ tributes|length }}
+          </strong>
+
+          tribute{% if tributes|length != 1 %}s{% endif %}
+
+          <span>
+            Read messages
+          </span>
+
+        </a>
+
+
+        {% if not memorial.is_published %}
+
+          <span class="mm-preview">
+            Private preview · not yet published
+          </span>
+
+        {% endif %}
+
+      </div>
+
     </div>
+
+
+    <!-- =====================================
+         SERVICE / FUNERAL STRIP
+    ====================================== -->
+
+    {% if
+      (event and event.service_datetime)
+      or memorial.burial_date
+      or memorial.burial_venue
+      or memorial.burial_map_url
+    %}
+
+      <section
+        class="mm-farewell-strip"
+        aria-label="Funeral service details"
+      >
+
+        <div class="mm-farewell-intro">
+
+          <span>
+            SERVICE OF FAREWELL
+          </span>
+
+          <strong id="countdown-headline">
+            Until we gather to honour this life
+          </strong>
+
+        </div>
+
+
+        {% if event and event.service_datetime %}
+
+          <div
+            class="mm-countdown"
+            id="service-countdown"
+            data-target="{{ event.service_datetime }}{{ event.timezone_offset }}"
+          >
+
+            <div>
+              <b id="countdown-days">
+                00
+              </b>
+              <small>
+                Days
+              </small>
+            </div>
+
+            <span class="mm-countdown-sep">
+              ·
+            </span>
+
+            <div>
+              <b id="countdown-hours">
+                00
+              </b>
+              <small>
+                Hours
+              </small>
+            </div>
+
+            <span class="mm-countdown-sep">
+              ·
+            </span>
+
+            <div>
+              <b id="countdown-minutes">
+                00
+              </b>
+              <small>
+                Minutes
+              </small>
+            </div>
+
+            <span class="mm-countdown-sep">
+              ·
+            </span>
+
+            <div>
+              <b id="countdown-seconds">
+                00
+              </b>
+              <small>
+                Seconds
+              </small>
+            </div>
+
+          </div>
+
+
+          <p
+            class="mm-countdown-finished"
+            id="countdown-finished"
+            hidden
+          >
+            Forever remembered.
+          </p>
+
+        {% else %}
+
+          <div></div>
+
+        {% endif %}
+
+
+        <div class="mm-farewell-meta">
+
+          {% if memorial.burial_date %}
+
+            <small>
+              {{ memorial.burial_date }}
+            </small>
+
+          {% endif %}
+
+
+          {% if memorial.burial_venue %}
+
+            <strong>
+              ⌖ {{ memorial.burial_venue }}
+            </strong>
+
+          {% endif %}
+
+        </div>
+
+
+        {% if memorial.burial_map_url %}
+
+          <a
+            class="mm-directions"
+            href="{{ memorial.burial_map_url }}"
+            target="_blank"
+            rel="noopener"
+          >
+            ↗ Directions
+          </a>
+
+        {% else %}
+
+          <span></span>
+
+        {% endif %}
+
+      </section>
+
+    {% endif %}
+
   </header>
 
-  <main class="memorial-main">
-    {% if memorial.biography %}
-    <section class="memorial-section">
-      <p class="eyebrow">A life remembered</p>
-      <h2>Heritage & story</h2>
-      <div class="memorial-story">{{ memorial.biography | e | replace('\n', '<br>') | safe }}</div>
-    </section>
+
+  <!-- =========================================
+       MAIN CONTENT
+  ========================================== -->
+
+  <main class="mm-main">
+
+
+    <!-- =====================================
+         BIOGRAPHY + DOCUMENTS
+    ====================================== -->
+
+    {% if memorial.biography or eulogy or programme %}
+
+      <section class="mm-grid">
+
+
+        {% if memorial.biography %}
+
+          <article class="mm-panel">
+
+            <p class="mm-kicker">
+              A life remembered
+            </p>
+
+            <h2>
+              Heritage & story
+            </h2>
+
+            <div class="mm-story">
+              {{
+                memorial.biography
+                | e
+                | replace('\n', '<br>')
+                | safe
+              }}
+            </div>
+
+          </article>
+
+        {% endif %}
+
+
+
+        {% if eulogy or programme %}
+
+          <article class="mm-panel">
+
+            <p class="mm-kicker">
+              Her story and legacy
+            </p>
+
+            <h2>
+              Memorial documents
+            </h2>
+
+            <p class="mm-panel-intro">
+              Read or keep the documents prepared by the family
+              to honour this life.
+            </p>
+
+
+            <div class="mm-document-grid">
+
+
+              <!-- Eulogy -->
+              {% if eulogy %}
+
+                <div class="mm-document-card">
+
+                  <span class="mm-document-icon">
+                    ❧
+                  </span>
+
+                  <div>
+
+                    <strong>
+                      Full Eulogy
+                    </strong>
+
+                    <span>
+                      {{ eulogy.filename }}
+                    </span>
+
+                  </div>
+
+
+                  <div class="mm-document-actions">
+
+                    <a
+                      class="mm-button mm-button-dark"
+                      href="{{ url_for(
+                        'public_document',
+                        slug=memorial.slug,
+                        kind='eulogy'
+                      ) }}"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Read Eulogy
+                    </a>
+
+
+                    <a
+                      class="mm-button mm-button-gold"
+                      href="{{ url_for(
+                        'public_document',
+                        slug=memorial.slug,
+                        kind='eulogy',
+                        download=1
+                      ) }}"
+                    >
+                      Download PDF
+                    </a>
+
+                  </div>
+
+                </div>
+
+              {% endif %}
+
+
+
+              <!-- Programme -->
+              {% if programme %}
+
+                <div class="mm-document-card">
+
+                  <span class="mm-document-icon">
+                    ✦
+                  </span>
+
+                  <div>
+
+                    <strong>
+                      Funeral Programme
+                    </strong>
+
+                    <span>
+                      {{ programme.filename }}
+                    </span>
+
+                  </div>
+
+
+                  <div class="mm-document-actions">
+
+                    <a
+                      class="mm-button mm-button-dark"
+                      href="{{ url_for(
+                        'public_document',
+                        slug=memorial.slug,
+                        kind='programme'
+                      ) }}"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      Read Programme
+                    </a>
+
+
+                    <a
+                      class="mm-button mm-button-gold"
+                      href="{{ url_for(
+                        'public_document',
+                        slug=memorial.slug,
+                        kind='programme',
+                        download=1
+                      ) }}"
+                    >
+                      Download PDF
+                    </a>
+
+                  </div>
+
+                </div>
+
+              {% endif %}
+
+            </div>
+
+          </article>
+
+        {% endif %}
+
+      </section>
+
     {% endif %}
 
-    {% if eulogy or programme %}
-    <section class="memorial-section document-section">
-      <p class="eyebrow">Life & farewell</p>
-      <h2>Memorial documents</h2>
-      <p class="document-intro">Read or keep the documents prepared by the family to honour this life.</p>
-      <div class="public-document-grid">
-        {% if eulogy %}
-        <article class="public-document-card">
-          <span class="document-icon">❧</span>
-          <div><strong>Full Eulogy</strong><span>{{ eulogy.filename }}</span></div>
-          <div class="actions">
-            <a class="btn memorial-btn-primary" href="{{ url_for('public_document', slug=memorial.slug, kind='eulogy') }}" target="_blank">Read eulogy</a>
-            <a class="btn memorial-btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind='eulogy', download=1) }}">Download PDF</a>
-          </div>
-        </article>
-        {% endif %}
-        {% if programme %}
-        <article class="public-document-card">
-          <span class="document-icon">✦</span>
-          <div><strong>Funeral Programme</strong><span>{{ programme.filename }}</span></div>
-          <div class="actions">
-            <a class="btn memorial-btn-primary" href="{{ url_for('public_document', slug=memorial.slug, kind='programme') }}" target="_blank">Read programme</a>
-            <a class="btn memorial-btn-light" href="{{ url_for('public_document', slug=memorial.slug, kind='programme', download=1) }}">Download PDF</a>
-          </div>
-        </article>
-        {% endif %}
-      </div>
-    </section>
-    {% endif %}
 
-    {% if memorial.burial_date or memorial.burial_venue or memorial.burial_map_url or memorial.livestream_url %}
-    <section class="memorial-section">
-      <p class="eyebrow">Farewell</p><h2>Funeral information</h2>
-      {% if memorial.burial_date %}<p><strong>Date / programme:</strong> {{ memorial.burial_date }}</p>{% endif %}
-      {% if memorial.burial_venue %}<p><strong>Venue:</strong> {{ memorial.burial_venue }}</p>{% endif %}
-      <div class="actions">
-        {% if memorial.burial_map_url %}<a class="btn memorial-btn-light" href="{{ memorial.burial_map_url }}" target="_blank" rel="noopener">Get directions</a>{% endif %}
-        {% if memorial.livestream_url %}<a class="btn memorial-btn-primary" href="{{ memorial.livestream_url }}" target="_blank" rel="noopener">Watch livestream</a>{% endif %}
-      </div>
-    </section>
-    {% endif %}
+
+    <!-- =====================================
+         PHOTO MEMORIES
+    ====================================== -->
 
     {% if gallery %}
-    <section class="memorial-section"><p class="eyebrow">Memories</p><h2>Photo gallery</h2>
-      <div class="public-gallery">{% for image in gallery %}<img src="{{ url_for('media_asset', asset_id=image.id) }}" alt="Memory of {{ memorial.memorial_name }}" loading="lazy">{% endfor %}</div>
-    </section>
+
+      <section class="mm-panel mm-full">
+
+        <p class="mm-kicker">
+          Life in pictures
+        </p>
+
+        <h2>
+          Photo Memories
+        </h2>
+
+        <p class="mm-panel-intro">
+          A collection of moments, celebrations and everyday memories
+          that remain with family and friends.
+        </p>
+
+
+        <div class="mm-gallery">
+
+          {% for image in gallery %}
+
+            <a
+              href="{{ url_for(
+                'media_asset',
+                asset_id=image.id
+              ) }}"
+              target="_blank"
+              rel="noopener"
+            >
+
+              <img
+                src="{{ url_for(
+                  'media_asset',
+                  asset_id=image.id
+                ) }}"
+                alt="Memory of {{ memorial.memorial_name }}"
+                loading="lazy"
+              >
+
+            </a>
+
+          {% endfor %}
+
+        </div>
+
+      </section>
+
     {% endif %}
 
-    {% if memorial.mpesa_number or memorial.whatsapp_url %}
-    <section class="memorial-section support-card">
-      <p class="eyebrow">Stand with the family</p><h2>Family support</h2>
-      {% if memorial.mpesa_number %}<div class="support-number">{{ memorial.mpesa_number }}</div>{% endif %}
-      {% if memorial.mpesa_name %}<p><strong>{{ memorial.mpesa_name }}</strong></p>{% endif %}
-      {% if memorial.contribution_purpose %}<p>{{ memorial.contribution_purpose }}</p>{% endif %}
-      <div class="actions centered">
-        {% if memorial.whatsapp_url %}<a class="btn memorial-btn-primary" href="{{ memorial.whatsapp_url }}" target="_blank" rel="noopener">Family WhatsApp</a>{% endif %}
-        <a class="btn memorial-btn-light" href="{{ whatsapp_share_url }}" target="_blank" rel="noopener">Share memorial</a>
-      </div>
-    </section>
+
+
+    <!-- =====================================
+         LIVESTREAM
+    ====================================== -->
+
+    {% if memorial.livestream_url %}
+
+      <section
+        class="mm-panel mm-full mm-live-grid"
+        id="live-service"
+      >
+
+        <div>
+
+          <p class="mm-kicker">
+            Join us online
+          </p>
+
+          <h2>
+            Funeral Livestream
+          </h2>
+
+          <p class="mm-panel-intro">
+            Join family and friends online as we gather to honour
+            and celebrate this life.
+          </p>
+
+          <span class="mm-live-status">
+
+            <span class="mm-live-dot"></span>
+
+            Funeral Service
+
+          </span>
+
+        </div>
+
+
+        <div>
+
+          <p>
+            When the service is live, use the button below
+            to open the family livestream.
+          </p>
+
+          <a
+            class="mm-button mm-button-gold"
+            href="{{ memorial.livestream_url }}"
+            target="_blank"
+            rel="noopener"
+          >
+            Watch Funeral Live
+          </a>
+
+        </div>
+
+      </section>
+
     {% endif %}
 
-    <section class="memorial-section candle-wall-section" id="tributes">
-      <div class="candle-wall-heading">
-        <div><p class="eyebrow">Condolence book</p><h2>Tributes & candle wall</h2></div>
-        <div class="candle-wall-count"><span class="tiny-live-flame"></span>{{ tributes|length }} candles glowing</div>
-      </div>
-      {% if memorial.is_published %}
-      <form class="form tribute-form" method="post" action="{{ url_for('add_tribute', slug=memorial.slug) }}">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <input class="honeypot" type="text" name="website" tabindex="-1" autocomplete="off">
-        <label>Your name<input name="participant_name" maxlength="90" placeholder="Your name"></label>
-        <label>Your tribute<textarea name="message" maxlength="900" rows="4" placeholder="Share a memory, prayer or message of comfort..." required></textarea></label>
-        <button class="btn memorial-btn-primary">Light a candle & leave tribute</button>
-      </form>
+
+
+    <!-- =====================================
+         TRIBUTE FORM + FAMILY SUPPORT
+    ====================================== -->
+
+    <section
+      class="mm-grid"
+      id="leave-tribute"
+    >
+
+
+      <!-- Leave tribute -->
+      <article class="mm-panel">
+
+        <p class="mm-kicker">
+          Digital condolence book
+        </p>
+
+        <h2>
+          Leave a tribute
+        </h2>
+
+        <p class="mm-panel-intro">
+          Share a condolence, prayer, tribute or cherished memory.
+          Your message will appear on the memorial wall.
+        </p>
+
+
+        {% if memorial.is_published %}
+
+          <form
+            class="mm-form"
+            method="post"
+            action="{{ url_for(
+              'add_tribute',
+              slug=memorial.slug
+            ) }}"
+          >
+
+            <input
+              type="hidden"
+              name="_csrf_token"
+              value="{{ csrf_token() }}"
+            >
+
+
+            <!-- Spam trap -->
+            <input
+              class="mm-honeypot"
+              type="text"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+            >
+
+
+            <label>
+
+              Your name
+
+              <input
+                name="participant_name"
+                maxlength="90"
+                autocomplete="name"
+                placeholder="Your name or family name"
+              >
+
+            </label>
+
+
+            <label>
+
+              Condolence, tribute or memory
+
+              <textarea
+                name="message"
+                maxlength="900"
+                rows="6"
+                placeholder="Share a memory, prayer or message of comfort..."
+                required
+              ></textarea>
+
+            </label>
+
+
+            <button
+              class="mm-button mm-button-gold mm-button-full"
+              type="submit"
+            >
+              Sign the book & light a candle
+            </button>
+
+          </form>
+
+
+          <p class="mm-privacy">
+            No phone number is collected.
+            Your name and message appear publicly on this memorial.
+          </p>
+
+        {% else %}
+
+          <p class="mm-panel-intro">
+            Tributes can be added after the family publishes
+            this memorial.
+          </p>
+
+        {% endif %}
+
+      </article>
+
+
+
+      <!-- Family support -->
+      {% if memorial.mpesa_number or memorial.whatsapp_url %}
+
+        <article
+          class="mm-panel"
+          id="support"
+        >
+
+          <p class="mm-kicker">
+            Optional family support
+          </p>
+
+          <h2>
+            Stand with the family
+          </h2>
+
+          <p class="mm-panel-intro">
+            Signing the memorial book is free.
+            Financial support, where provided, is optional.
+          </p>
+
+
+          {% if memorial.mpesa_number %}
+
+            <div class="mm-support-card">
+
+              <div class="mm-support-topline">
+
+                <span>
+                  M-Pesa number
+                </span>
+
+                <span>
+                  M-PESA
+                </span>
+
+              </div>
+
+
+              <strong
+                class="mm-support-number"
+                id="mpesa-number"
+              >
+                {{ memorial.mpesa_number }}
+              </strong>
+
+
+              <div class="mm-support-details">
+
+
+                {% if memorial.mpesa_name %}
+
+                  <div>
+
+                    <span>
+                      Recipient
+                    </span>
+
+                    <b>
+                      {{ memorial.mpesa_name }}
+                    </b>
+
+                  </div>
+
+                {% endif %}
+
+
+                {% if memorial.contribution_purpose %}
+
+                  <div>
+
+                    <span>
+                      Purpose
+                    </span>
+
+                    <b>
+                      {{ memorial.contribution_purpose }}
+                    </b>
+
+                  </div>
+
+                {% endif %}
+
+              </div>
+
+            </div>
+
+
+            <button
+              class="mm-button mm-button-dark mm-button-full"
+              type="button"
+              onclick="copyMpesa()"
+            >
+              Copy M-Pesa number
+            </button>
+
+          {% endif %}
+
+
+          <div class="mm-actions">
+
+            {% if memorial.whatsapp_url %}
+
+              <a
+                class="mm-button mm-button-whatsapp"
+                href="{{ memorial.whatsapp_url }}"
+                target="_blank"
+                rel="noopener"
+              >
+                Family WhatsApp
+              </a>
+
+            {% endif %}
+
+
+            <a
+              class="mm-button mm-button-dark"
+              href="{{ whatsapp_share_url }}"
+              target="_blank"
+              rel="noopener"
+            >
+              Share memorial
+            </a>
+
+          </div>
+
+        </article>
+
       {% endif %}
 
-      <div class="tribute-wall">
-        {% for tribute in tributes %}
-        <article class="tribute-card premium-candle-card" id="tribute-{{ tribute.id }}">
-          <div class="live-candle" aria-hidden="true" style="--candle-delay:-{{ (tribute.id % 7) * 0.17 }}s">
-            <span class="flame"><span class="flame-core"></span></span>
-            <span class="spark spark-one"></span><span class="spark spark-two"></span><span class="spark spark-three"></span>
-            <span class="wick"></span><span class="wax"><span class="wax-drip"></span></span>
-          </div>
-          <div class="tribute-copy">
-            <strong>{{ tribute.participant_name }}</strong>
-            <p>{{ tribute.message }}</p>
-            {% if tribute.is_acknowledged %}<span class="love-note">♥ Acknowledged with love by the family</span>{% endif %}
-          </div>
-        </article>
-        {% else %}
-        <div class="empty memorial-empty">No tributes yet. This remembrance wall is ready to receive the first candle.</div>
-        {% endfor %}
-      </div>
     </section>
 
+
+
+    <!-- =====================================
+         CONDOLENCE / TRIBUTE WALL
+    ====================================== -->
+
+    <section
+      class="mm-panel mm-wall"
+      id="candle-wall"
+    >
+
+      <div class="mm-wall-heading">
+
+        <div>
+
+          <p class="mm-kicker">
+            Messages, prayers and cherished memories
+          </p>
+
+          <h2>
+            Memorial & Condolence Wall
+          </h2>
+
+        </div>
+
+
+        <div class="mm-wall-count">
+
+          <span class="mm-tiny-flame"></span>
+
+          {{ tributes|length }}
+
+          entr{% if tributes|length == 1 %}y{% else %}ies{% endif %}
+
+        </div>
+
+      </div>
+
+
+      <p class="mm-wall-intro">
+        Words shared by relatives, friends and everyone whose
+        life was touched by {{ memorial.memorial_name }}.
+      </p>
+
+
+      <div class="mm-tributes">
+
+        {% for tribute in tributes %}
+
+          <article
+            class="mm-tribute-card"
+            id="tribute-{{ tribute.id }}"
+          >
+
+            <div class="mm-tribute-heading">
+
+              <span
+                class="mm-tribute-flame"
+                aria-hidden="true"
+              ></span>
+
+
+              <div>
+
+                <h3>
+                  {{ tribute.participant_name }}
+                </h3>
+
+                <time datetime="{{ tribute.created_at.isoformat() }}">
+                  Shared {{ tribute.created_at.strftime("%d %b %Y") }}
+                </time>
+
+              </div>
+
+            </div>
+
+
+            <blockquote>
+              “{{ tribute.message }}”
+            </blockquote>
+
+
+            {% if tribute.is_acknowledged %}
+
+              <span class="mm-love-note">
+
+                ♥ Acknowledged with love by the family
+
+              </span>
+
+            {% endif %}
+
+          </article>
+
+
+        {% else %}
+
+          <div class="mm-empty">
+
+            <h3>
+              Be the first to leave a tribute
+            </h3>
+
+            <p>
+              Your words can begin this digital book
+              of love, comfort and remembrance.
+            </p>
+
+            {% if memorial.is_published %}
+
+              <a
+                class="mm-button mm-button-gold"
+                href="#leave-tribute"
+              >
+                Leave a tribute
+              </a>
+
+            {% endif %}
+
+          </div>
+
+        {% endfor %}
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         FAMILY ACKNOWLEDGEMENT
+    ====================================== -->
+
     {% if memorial.family_acknowledgement %}
-    <section class="memorial-section family-thanks"><p class="eyebrow">From the family</p><h2>With heartfelt gratitude</h2><p>{{ memorial.family_acknowledgement }}</p></section>
+
+      <section class="mm-panel mm-full mm-family-thanks">
+
+        <div class="mm-family-mark">
+          ♥
+        </div>
+
+        <p class="mm-kicker">
+          From the family
+        </p>
+
+        <h2>
+          With heartfelt gratitude
+        </h2>
+
+        <p class="mm-family-message">
+          {{ memorial.family_acknowledgement }}
+        </p>
+
+        <p class="mm-family-signoff">
+          With love and gratitude ·
+          The family of {{ memorial.memorial_name }}
+        </p>
+
+      </section>
+
     {% endif %}
+
   </main>
 
-  <footer class="memorial-footer"><span>Forever remembered.</span><a href="{{ url_for('family_login', slug=memorial.slug) }}">Family access</a></footer>
+
+
+  <!-- =========================================
+       FOOTER
+  ========================================== -->
+
+  <footer class="mm-footer">
+
+    <span>
+      Forever remembered. Forever loved.
+    </span>
+
+    <a
+      href="{{ url_for(
+        'family_login',
+        slug=memorial.slug
+      ) }}"
+    >
+      Family access
+    </a>
+
+  </footer>
+
 </div>
 
-{% if event and event.service_datetime %}
+
+
+<!-- =========================================
+     MOBILE QUICK ACTIONS
+========================================== -->
+
+<nav
+  class="mm-mobile-bar"
+  aria-label="Quick actions"
+>
+
+  <a href="#leave-tribute">
+    Leave tribute
+  </a>
+
+
+  {% if eulogy %}
+
+    <a
+      href="{{ url_for(
+        'public_document',
+        slug=memorial.slug,
+        kind='eulogy'
+      ) }}"
+      target="_blank"
+      rel="noopener"
+    >
+      Eulogy
+    </a>
+
+  {% else %}
+
+    <a href="#candle-wall">
+      Memories
+    </a>
+
+  {% endif %}
+
+
+  <a href="#candle-wall">
+    Read messages
+  </a>
+
+</nav>
+
+
+
+<!-- =========================================
+     JAVASCRIPT
+========================================== -->
+
 <script>
+
 (() => {
-  const box = document.getElementById("service-countdown");
-  if (!box) return;
-  const target = new Date(box.dataset.target).getTime();
-  const d = document.getElementById("countdown-days");
-  const h = document.getElementById("countdown-hours");
-  const m = document.getElementById("countdown-minutes");
-  const s = document.getElementById("countdown-seconds");
-  const finished = document.getElementById("countdown-finished");
-  const pad = n => String(n).padStart(2, "0");
-  function tick() {
-    const left = target - Date.now();
-    if (!Number.isFinite(target) || left <= 0) {
-      d.textContent=h.textContent=m.textContent=s.textContent="00";
-      finished.hidden=false;
-      return false;
+
+  /* -----------------------------------------
+     SERVICE COUNTDOWN
+  ------------------------------------------ */
+
+  const box =
+    document.getElementById("service-countdown");
+
+
+  if (box) {
+
+    const target =
+      new Date(box.dataset.target).getTime();
+
+
+    const days =
+      document.getElementById("countdown-days");
+
+    const hours =
+      document.getElementById("countdown-hours");
+
+    const minutes =
+      document.getElementById("countdown-minutes");
+
+    const seconds =
+      document.getElementById("countdown-seconds");
+
+    const finished =
+      document.getElementById("countdown-finished");
+
+    const headline =
+      document.getElementById("countdown-headline");
+
+
+    const pad = number =>
+      String(number).padStart(2, "0");
+
+
+    function tick() {
+
+      const remaining =
+        target - Date.now();
+
+
+      if (
+        !Number.isFinite(target) ||
+        remaining <= 0
+      ) {
+
+        days.textContent = "00";
+        hours.textContent = "00";
+        minutes.textContent = "00";
+        seconds.textContent = "00";
+
+
+        if (finished) {
+          finished.hidden = false;
+        }
+
+
+        if (headline) {
+          headline.textContent =
+            "Forever remembered";
+        }
+
+
+        return false;
+      }
+
+
+      const totalSeconds =
+        Math.floor(remaining / 1000);
+
+
+      days.textContent =
+        pad(
+          Math.floor(
+            totalSeconds / 86400
+          )
+        );
+
+
+      hours.textContent =
+        pad(
+          Math.floor(
+            (totalSeconds % 86400) / 3600
+          )
+        );
+
+
+      minutes.textContent =
+        pad(
+          Math.floor(
+            (totalSeconds % 3600) / 60
+          )
+        );
+
+
+      seconds.textContent =
+        pad(
+          totalSeconds % 60
+        );
+
+
+      return true;
     }
-    const total = Math.floor(left/1000);
-    d.textContent=pad(Math.floor(total/86400));
-    h.textContent=pad(Math.floor((total%86400)/3600));
-    m.textContent=pad(Math.floor((total%3600)/60));
-    s.textContent=pad(total%60);
-    return true;
+
+
+    tick();
+
+
+    const timer =
+      setInterval(() => {
+
+        if (!tick()) {
+          clearInterval(timer);
+        }
+
+      }, 1000);
+
   }
-  tick();
-  const timer = setInterval(() => { if (!tick()) clearInterval(timer); }, 1000);
+
+
+
+  /* -----------------------------------------
+     COPY M-PESA NUMBER
+  ------------------------------------------ */
+
+  window.copyMpesa =
+    async function () {
+
+      const node =
+        document.getElementById(
+          "mpesa-number"
+        );
+
+
+      if (!node) {
+        return;
+      }
+
+
+      const number =
+        node.textContent.trim();
+
+
+      try {
+
+        await navigator.clipboard.writeText(
+          number
+        );
+
+
+        const originalText =
+          node.textContent;
+
+
+        node.textContent =
+          "Copied: " + number;
+
+
+        setTimeout(() => {
+
+          node.textContent =
+            originalText;
+
+        }, 1600);
+
+
+      } catch (error) {
+
+        window.prompt(
+          "Copy the M-Pesa number:",
+          number
+        );
+
+      }
+
+    };
+
 })();
+
 </script>
-{% endif %}
+
 {% endblock %}
