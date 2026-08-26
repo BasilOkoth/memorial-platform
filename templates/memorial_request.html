@@ -1,0 +1,1085 @@
+{% extends "base.html" %}
+
+{% block title %}
+Create a Memorial · Elimara Technologies
+{% endblock %}
+
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='request.css') }}"
+>
+{% endblock %}
+
+{% block body %}
+
+<main class="request-page">
+
+  <nav class="request-nav">
+
+    <a
+      class="request-brand"
+      href="{{ url_for('home') }}"
+    >
+      <span>♥</span>
+
+      <div>
+        <strong>
+          Elimara Memorials
+        </strong>
+
+        <small>
+          by Elimara Technologies
+        </small>
+      </div>
+    </a>
+
+    <a
+      class="request-help"
+      href="https://wa.me/254763941520?text=Hello%20Elimara%20Technologies%2C%20I%20need%20help%20creating%20a%20digital%20memorial."
+      target="_blank"
+      rel="noopener"
+    >
+      Need help? WhatsApp us
+    </a>
+
+  </nav>
+
+
+  <header class="request-hero">
+
+    <p class="request-eyebrow">
+      Memorial request
+    </p>
+
+    <h1>
+      Tell us about the life you want to remember.
+    </h1>
+
+    <p>
+      Share the information you already have.
+      You do not need to have everything ready today.
+      Photographs, the full eulogy and funeral programme
+      can be added later through the family's private dashboard.
+    </p>
+
+    <div class="request-trust">
+
+      <span>
+        Private until approved
+      </span>
+
+      <span>
+        Family controlled
+      </span>
+
+      <span>
+        You can add details later
+      </span>
+
+    </div>
+
+  </header>
+
+
+  <form
+    class="request-form"
+    id="memorial-request-form"
+    method="post"
+    action="{{ url_for('memorial_request') }}"
+  >
+
+    <input
+      type="hidden"
+      name="_csrf_token"
+      value="{{ csrf_token() }}"
+    >
+
+    <input
+      class="request-honeypot"
+      type="text"
+      name="website"
+      tabindex="-1"
+      autocomplete="off"
+    >
+
+
+    <!-- =====================================
+         PROGRESS
+    ====================================== -->
+
+    <div class="request-progress" aria-label="Form progress">
+
+      <div class="request-progress-bar">
+        <span id="request-progress-fill"></span>
+      </div>
+
+      <div class="request-progress-copy">
+        <strong id="request-step-number">
+          Step 1 of 6
+        </strong>
+
+        <span id="request-step-title">
+          Your loved one
+        </span>
+      </div>
+
+    </div>
+
+
+    <!-- =====================================
+         STEP 1
+    ====================================== -->
+
+    <section
+      class="request-step is-active"
+      data-step="1"
+      data-title="Your loved one"
+    >
+
+      <div class="request-section-heading">
+
+        <span>01</span>
+
+        <div>
+          <p>
+            About your loved one
+          </p>
+
+          <h2>
+            Who are we creating this memorial for?
+          </h2>
+        </div>
+
+      </div>
+
+
+      <div class="request-fields two-columns">
+
+        <label>
+          Full name of your loved one
+          <input
+            name="memorial_name"
+            maxlength="160"
+            required
+            placeholder="e.g. Dancan Watson"
+          >
+        </label>
+
+        <label>
+          Preferred display name
+          <input
+            name="display_name"
+            maxlength="160"
+            placeholder="Leave blank to use the full name"
+          >
+        </label>
+
+        <label>
+          Date of birth
+          <input
+            type="date"
+            name="birth_date"
+          >
+        </label>
+
+        <label>
+          Date of passing
+          <input
+            type="date"
+            name="death_date"
+          >
+        </label>
+
+        <label class="field-full">
+          Place of birth
+          <input
+            name="place_of_birth"
+            maxlength="160"
+            placeholder="Optional"
+          >
+        </label>
+
+      </div>
+
+
+      <label class="request-field">
+        Memorial message
+
+        <input
+          name="memorial_message"
+          maxlength="320"
+          placeholder="Forever loved, forever remembered, forever in our hearts."
+        >
+
+        <small>
+          This appears prominently beneath the person's name.
+        </small>
+      </label>
+
+
+      <label class="request-field">
+        Short life story / biography
+
+        <textarea
+          name="biography"
+          maxlength="8000"
+          rows="9"
+          placeholder="Tell us about their upbringing, family, education, work, faith, interests, values, achievements and legacy..."
+        ></textarea>
+
+        <small>
+          A short version is enough. The full eulogy can be uploaded later.
+        </small>
+      </label>
+
+    </section>
+
+
+    <!-- =====================================
+         STEP 2
+    ====================================== -->
+
+    <section
+      class="request-step"
+      data-step="2"
+      data-title="Photos & documents"
+    >
+
+      <div class="request-section-heading">
+
+        <span>02</span>
+
+        <div>
+          <p>
+            Materials
+          </p>
+
+          <h2>
+            What do you already have available?
+          </h2>
+        </div>
+
+      </div>
+
+
+      <p class="request-section-intro">
+        You do not upload these files here.
+        We only need to know what is ready.
+        Once your memorial is created, the family dashboard
+        will allow you to upload everything securely.
+      </p>
+
+
+      <div class="availability-grid">
+
+        <fieldset class="availability-card">
+          <legend>
+            Main portrait
+          </legend>
+
+          <p>
+            Do you have a clear photograph for the main portrait?
+          </p>
+
+          <label>
+            <input
+              type="radio"
+              name="has_portrait"
+              value="yes"
+            >
+            Yes
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="has_portrait"
+              value="no"
+              checked
+            >
+            Not yet
+          </label>
+        </fieldset>
+
+
+        <fieldset class="availability-card">
+          <legend>
+            Additional photographs
+          </legend>
+
+          <p>
+            Do you have family or memory photographs for the gallery?
+          </p>
+
+          <label>
+            <input
+              type="radio"
+              name="has_gallery"
+              value="yes"
+            >
+            Yes
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="has_gallery"
+              value="no"
+              checked
+            >
+            Not yet
+          </label>
+        </fieldset>
+
+
+        <fieldset class="availability-card">
+          <legend>
+            Full eulogy
+          </legend>
+
+          <p>
+            Is the final eulogy PDF available?
+          </p>
+
+          <label>
+            <input
+              type="radio"
+              name="has_eulogy"
+              value="yes"
+            >
+            Yes
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="has_eulogy"
+              value="no"
+              checked
+            >
+            Not yet
+          </label>
+        </fieldset>
+
+
+        <fieldset class="availability-card">
+          <legend>
+            Funeral programme
+          </legend>
+
+          <p>
+            Is the funeral programme PDF available?
+          </p>
+
+          <label>
+            <input
+              type="radio"
+              name="has_programme"
+              value="yes"
+            >
+            Yes
+          </label>
+
+          <label>
+            <input
+              type="radio"
+              name="has_programme"
+              value="no"
+              checked
+            >
+            Not yet
+          </label>
+        </fieldset>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================
+         STEP 3
+    ====================================== -->
+
+    <section
+      class="request-step"
+      data-step="3"
+      data-title="Funeral information"
+    >
+
+      <div class="request-section-heading">
+
+        <span>03</span>
+
+        <div>
+          <p>
+            Funeral arrangements
+          </p>
+
+          <h2>
+            Help relatives know when and where to gather.
+          </h2>
+        </div>
+
+      </div>
+
+
+      <p class="request-section-intro">
+        Leave anything blank if the family has not confirmed it yet.
+        These details can be updated later.
+      </p>
+
+
+      <div class="request-fields two-columns">
+
+        <label>
+          Funeral date / programme note
+
+          <input
+            name="funeral_date"
+            maxlength="160"
+            placeholder="e.g. Saturday, 29 August 2026"
+          >
+        </label>
+
+
+        <label>
+          Exact service date & time
+
+          <input
+            type="datetime-local"
+            name="service_datetime"
+          >
+
+          <small>
+            Powers the public countdown down to the second.
+          </small>
+        </label>
+
+
+        <label>
+          Time zone
+
+          <select name="timezone_offset">
+            <option value="+03:00" selected>
+              UTC +03:00 · East Africa
+            </option>
+            <option value="+00:00">UTC ±00:00</option>
+            <option value="+01:00">UTC +01:00</option>
+            <option value="+02:00">UTC +02:00</option>
+            <option value="+04:00">UTC +04:00</option>
+            <option value="+05:00">UTC +05:00</option>
+            <option value="-01:00">UTC -01:00</option>
+            <option value="-02:00">UTC -02:00</option>
+            <option value="-03:00">UTC -03:00</option>
+            <option value="-04:00">UTC -04:00</option>
+            <option value="-05:00">UTC -05:00</option>
+          </select>
+        </label>
+
+
+        <label>
+          Funeral / burial venue
+
+          <input
+            name="burial_venue"
+            maxlength="260"
+            placeholder="Church, home, cemetery or other venue"
+          >
+        </label>
+
+
+        <label>
+          Google Maps link
+
+          <input
+            type="url"
+            name="burial_map_url"
+            maxlength="600"
+            placeholder="https://..."
+          >
+        </label>
+
+
+        <label>
+          Livestream link
+
+          <input
+            type="url"
+            name="livestream_url"
+            maxlength="600"
+            placeholder="YouTube or other https:// link"
+          >
+        </label>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================
+         STEP 4
+    ====================================== -->
+
+    <section
+      class="request-step"
+      data-step="4"
+      data-title="Family support"
+    >
+
+      <div class="request-section-heading">
+
+        <span>04</span>
+
+        <div>
+          <p>
+            Optional family support
+          </p>
+
+          <h2>
+            Would you like support details displayed?
+          </h2>
+        </div>
+
+      </div>
+
+
+      <p class="request-section-intro">
+        This entire section is optional.
+        Leave it blank if the memorial should not show contribution details.
+      </p>
+
+
+      <div class="request-fields two-columns">
+
+        <label>
+          M-Pesa number
+
+          <input
+            name="mpesa_number"
+            maxlength="50"
+            placeholder="e.g. 07..."
+          >
+        </label>
+
+
+        <label>
+          M-Pesa account name
+
+          <input
+            name="mpesa_name"
+            maxlength="140"
+            placeholder="Name that should appear"
+          >
+        </label>
+
+
+        <label class="field-full">
+          Contribution purpose
+
+          <input
+            name="contribution_purpose"
+            maxlength="220"
+            placeholder="e.g. Funeral and burial support"
+          >
+        </label>
+
+
+        <label class="field-full">
+          Family WhatsApp group / contact link
+
+          <input
+            type="url"
+            name="whatsapp_url"
+            maxlength="600"
+            placeholder="https://chat.whatsapp.com/... or https://wa.me/..."
+          >
+        </label>
+
+      </div>
+
+
+      <label class="request-field">
+        Family acknowledgement / thank-you message
+
+        <textarea
+          name="family_acknowledgement"
+          maxlength="5000"
+          rows="7"
+          placeholder="Thank relatives, friends, colleagues, neighbours and everyone who has stood with the family..."
+        ></textarea>
+      </label>
+
+    </section>
+
+
+    <!-- =====================================
+         STEP 5
+    ====================================== -->
+
+    <section
+      class="request-step"
+      data-step="5"
+      data-title="Memorial preferences"
+    >
+
+      <div class="request-section-heading">
+
+        <span>05</span>
+
+        <div>
+          <p>
+            Appearance & publishing
+          </p>
+
+          <h2>
+            How would you like the memorial prepared?
+          </h2>
+        </div>
+
+      </div>
+
+
+      <fieldset class="theme-choice">
+
+        <legend>
+          Preferred memorial theme
+        </legend>
+
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_theme"
+            value="classic"
+            checked
+          >
+
+          <span>
+            <strong>Classic</strong>
+            <small>
+              Elegant and timeless
+            </small>
+          </span>
+        </label>
+
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_theme"
+            value="warm"
+          >
+
+          <span>
+            <strong>Warm</strong>
+            <small>
+              Rich, warm remembrance tones
+            </small>
+          </span>
+        </label>
+
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_theme"
+            value="serene"
+          >
+
+          <span>
+            <strong>Serene</strong>
+            <small>
+              Calm and gentle
+            </small>
+          </span>
+        </label>
+
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_theme"
+            value="choose"
+          >
+
+          <span>
+            <strong>Let Elimara choose</strong>
+            <small>
+              We will select the most suitable presentation
+            </small>
+          </span>
+        </label>
+
+      </fieldset>
+
+
+      <div class="request-fields two-columns">
+
+        <label>
+          Preferred memorial link
+
+          <div class="request-prefix">
+            <span>/m/</span>
+
+            <input
+              name="preferred_slug"
+              maxlength="80"
+              placeholder="dancan-watson"
+            >
+          </div>
+
+          <small>
+            We will adjust it if the link is already in use.
+          </small>
+        </label>
+
+
+        <label>
+          Publishing preference
+
+          <select name="publishing_preference">
+
+            <option value="review_first" selected>
+              Keep private until family review
+            </option>
+
+            <option value="publish_ready">
+              Publish when Elimara says it is ready
+            </option>
+
+            <option value="specific_date">
+              We will agree on a publication date
+            </option>
+
+          </select>
+        </label>
+
+      </div>
+
+
+      <label class="request-field">
+        Anything else you would like included?
+
+        <textarea
+          name="additional_requests"
+          maxlength="5000"
+          rows="7"
+          placeholder="A favourite verse, prayer, quote, song, special tribute section, organization message, video or any other request..."
+        ></textarea>
+      </label>
+
+    </section>
+
+
+    <!-- =====================================
+         STEP 6
+    ====================================== -->
+
+    <section
+      class="request-step"
+      data-step="6"
+      data-title="Your contact details"
+    >
+
+      <div class="request-section-heading">
+
+        <span>06</span>
+
+        <div>
+          <p>
+            Family contact
+          </p>
+
+          <h2>
+            Who should Elimara speak with?
+          </h2>
+        </div>
+
+      </div>
+
+
+      <div class="request-fields two-columns">
+
+        <label>
+          Your name
+
+          <input
+            name="requester_name"
+            maxlength="160"
+            required
+            autocomplete="name"
+            placeholder="Full name"
+          >
+        </label>
+
+
+        <label>
+          Relationship to your loved one
+
+          <input
+            name="relationship"
+            maxlength="120"
+            placeholder="e.g. Son, daughter, sibling, family representative"
+          >
+        </label>
+
+
+        <label>
+          Phone / WhatsApp number
+
+          <input
+            type="tel"
+            name="phone"
+            maxlength="60"
+            required
+            autocomplete="tel"
+            placeholder="+254..."
+          >
+        </label>
+
+
+        <label>
+          Email address
+
+          <input
+            type="email"
+            name="email"
+            maxlength="180"
+            autocomplete="email"
+            placeholder="Optional"
+          >
+        </label>
+
+      </div>
+
+
+      <fieldset class="contact-choice">
+
+        <legend>
+          How would you prefer us to contact you?
+        </legend>
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_contact"
+            value="whatsapp"
+            checked
+          >
+          WhatsApp
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_contact"
+            value="phone"
+          >
+          Phone call
+        </label>
+
+        <label>
+          <input
+            type="radio"
+            name="preferred_contact"
+            value="email"
+          >
+          Email
+        </label>
+
+      </fieldset>
+
+
+      <div class="request-consent">
+
+        <label>
+
+          <input
+            type="checkbox"
+            name="consent"
+            value="yes"
+            required
+          >
+
+          <span>
+            I confirm that I have permission from the family
+            to provide this information and photographs for the
+            purpose of creating this memorial. I understand that
+            information included in a published memorial may become
+            publicly accessible.
+          </span>
+
+        </label>
+
+      </div>
+
+
+      <div class="request-review-note">
+
+        <strong>
+          What happens next?
+        </strong>
+
+        <p>
+          Your request will go directly to Elimara Technologies.
+          We will review the information, contact you, and create a
+          private draft memorial. The memorial will not be publicly
+          published before the agreed review process.
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================
+         NAVIGATION
+    ====================================== -->
+
+    <div class="request-form-navigation">
+
+      <button
+        class="request-back-button"
+        id="request-back"
+        type="button"
+        hidden
+      >
+        Back
+      </button>
+
+      <button
+        class="request-next-button"
+        id="request-next"
+        type="button"
+      >
+        Continue
+      </button>
+
+      <button
+        class="request-submit-button"
+        id="request-submit"
+        type="submit"
+        hidden
+      >
+        Submit Memorial Request
+      </button>
+
+    </div>
+
+  </form>
+
+
+  <footer class="request-footer">
+
+    <strong>
+      Elimara Technologies
+    </strong>
+
+    <p>
+      Digital memorials created with care.
+    </p>
+
+    <div>
+
+      <a
+        href="https://wa.me/254763941520"
+        target="_blank"
+        rel="noopener"
+      >
+        +254 763 941 520
+      </a>
+
+      <span>·</span>
+
+      <a href="mailto:info@shulehub.org">
+        info@shulehub.org
+      </a>
+
+    </div>
+
+  </footer>
+
+</main>
+
+
+<script>
+(() => {
+  const form = document.getElementById("memorial-request-form");
+  if (!form) return;
+
+  form.classList.add("has-js");
+
+  const steps = Array.from(
+    form.querySelectorAll(".request-step")
+  );
+
+  const backButton = document.getElementById("request-back");
+  const nextButton = document.getElementById("request-next");
+  const submitButton = document.getElementById("request-submit");
+  const stepNumber = document.getElementById("request-step-number");
+  const stepTitle = document.getElementById("request-step-title");
+  const progressFill = document.getElementById("request-progress-fill");
+
+  let current = 0;
+
+  function showStep(index) {
+    current = Math.max(0, Math.min(index, steps.length - 1));
+
+    steps.forEach((step, position) => {
+      step.classList.toggle("is-active", position === current);
+    });
+
+    const step = steps[current];
+
+    stepNumber.textContent =
+      `Step ${current + 1} of ${steps.length}`;
+
+    stepTitle.textContent =
+      step.dataset.title || "";
+
+    progressFill.style.width =
+      `${((current + 1) / steps.length) * 100}%`;
+
+    backButton.hidden = current === 0;
+    nextButton.hidden = current === steps.length - 1;
+    submitButton.hidden = current !== steps.length - 1;
+
+    window.scrollTo({
+      top: Math.max(
+        0,
+        form.getBoundingClientRect().top + window.scrollY - 25
+      ),
+      behavior: "smooth"
+    });
+  }
+
+  function validateCurrentStep() {
+    const requiredFields = steps[current].querySelectorAll(
+      "input[required], textarea[required], select[required]"
+    );
+
+    for (const field of requiredFields) {
+      if (!field.checkValidity()) {
+        field.reportValidity();
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  nextButton.addEventListener("click", () => {
+    if (!validateCurrentStep()) return;
+    showStep(current + 1);
+  });
+
+  backButton.addEventListener("click", () => {
+    showStep(current - 1);
+  });
+
+  showStep(0);
+})();
+</script>
+
+{% endblock %}
