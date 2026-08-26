@@ -3,20 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#6f5240">
-  <title>{% block title %}Memorial Platform{% endblock %}</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <meta name="theme-color" content="#08090d">
+
+  <title>
+    {% block title %}
+      Memorial Platform
+    {% endblock %}
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='styles.css') }}"
+  >
+
+  {% block extra_head %}{% endblock %}
 </head>
+
 <body>
+
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flash-stack" aria-live="polite">
         {% for category, message in messages %}
-          <div class="flash flash-{{ category }}">{{ message }}</div>
+          <div class="flash flash-{{ category }}">
+            {{ message }}
+          </div>
         {% endfor %}
       </div>
     {% endif %}
   {% endwith %}
+
   {% block body %}{% endblock %}
+
 </body>
 </html>
