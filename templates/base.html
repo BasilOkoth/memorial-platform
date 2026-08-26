@@ -5,11 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#08090d">
 
-  <title>
-    {% block title %}
-      Memorial Platform
-    {% endblock %}
-  </title>
+  <title>{% block title %}Memorial Platform{% endblock %}</title>
 
   <link
     rel="stylesheet"
@@ -20,7 +16,6 @@
 </head>
 
 <body>
-
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
       <div class="flash-stack" aria-live="polite">
@@ -34,6 +29,5 @@
   {% endwith %}
 
   {% block body %}{% endblock %}
-
 </body>
 </html>
