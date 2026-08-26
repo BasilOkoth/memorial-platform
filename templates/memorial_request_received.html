@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}
+Request Received · Elimara Technologies
+{% endblock %}
+
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='request.css') }}"
+>
+{% endblock %}
+
+{% block body %}
+
+<main class="request-success-page">
+
+  <section class="request-success-card">
+
+    <div class="success-heart">
+      ♥
+    </div>
+
+    <p class="request-eyebrow">
+      Request received
+    </p>
+
+    <h1>
+      Thank you, {{ lead.requester_name }}.
+    </h1>
+
+    <p class="success-lead">
+      We have received your request to create a digital memorial
+      for <strong>{{ lead.display_name or lead.memorial_name }}</strong>.
+    </p>
+
+
+    <div class="success-reference">
+
+      <span>
+        Your request reference
+      </span>
+
+      <strong>
+        {{ lead.reference_code }}
+      </strong>
+
+      <small>
+        Keep this reference if you contact us about the request.
+      </small>
+
+    </div>
+
+
+    <div class="success-next">
+
+      <h2>
+        What happens next?
+      </h2>
+
+      <ol>
+
+        <li>
+          Elimara Technologies reviews the information you submitted.
+        </li>
+
+        <li>
+          We contact you using your preferred contact method.
+        </li>
+
+        <li>
+          Once confirmed, we create a private draft memorial.
+        </li>
+
+        <li>
+          The family receives access to add photographs,
+          the eulogy and funeral programme.
+        </li>
+
+        <li>
+          The memorial is reviewed before it is publicly shared.
+        </li>
+
+      </ol>
+
+    </div>
+
+
+    <div class="success-actions">
+
+      <a
+        class="success-whatsapp"
+        href="{{ whatsapp_followup_url }}"
+        target="_blank"
+        rel="noopener"
+      >
+        Continue on WhatsApp
+      </a>
+
+      <a
+        class="success-home"
+        href="{{ url_for('home') }}"
+      >
+        Return to Elimara Memorials
+      </a>
+
+    </div>
+
+
+    <p class="success-contact">
+      Need help?
+      <a href="mailto:info@shulehub.org">
+        info@shulehub.org
+      </a>
+      ·
+      <a
+        href="https://wa.me/254763941520"
+        target="_blank"
+        rel="noopener"
+      >
+        +254 763 941 520
+      </a>
+    </p>
+
+  </section>
+
+</main>
+
+{% endblock %}
