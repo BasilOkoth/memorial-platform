@@ -1,23 +1,223 @@
 {% extends "base.html" %}
-{% block title %}Memorials · Remember with Love{% endblock %}
+
+{% block title %}
+Elimara Memorials · Digital Memorials Created with Care
+{% endblock %}
+
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='request.css') }}"
+>
+{% endblock %}
+
 {% block body %}
-<main class="landing">
+
+<main class="landing elimara-home">
+
   <nav class="landing-nav">
-    <div class="brand"><span class="brand-mark">♥</span> Memorials</div>
-    <a class="btn btn-light" href="{{ url_for('platform_login') }}">Platform login</a>
+
+    <a class="elimara-home-brand" href="{{ url_for('home') }}">
+      <span class="brand-mark">♥</span>
+
+      <span>
+        <strong>Elimara Memorials</strong>
+        <small>by Elimara Technologies</small>
+      </span>
+    </a>
+
+    <div class="home-nav-actions">
+      <a
+        class="btn btn-primary"
+        href="{{ url_for('memorial_request') }}"
+      >
+        Create a Memorial
+      </a>
+
+      <a
+        class="btn btn-light"
+        href="{{ url_for('platform_login') }}"
+      >
+        Platform login
+      </a>
+    </div>
+
   </nav>
 
+
   <section class="landing-hero">
-    <p class="eyebrow">Remember · Gather · Preserve</p>
-    <h1>A beautiful digital home for every life remembered.</h1>
-    <p class="landing-copy">Create a respectful memorial where families can share funeral information, receive tributes, preserve photographs and acknowledge the people who stood with them.</p>
+
+    <p class="eyebrow">
+      Remember · Gather · Preserve
+    </p>
+
+    <h1>
+      A beautiful digital home for every life remembered.
+    </h1>
+
+    <p class="landing-copy">
+      Elimara Memorials helps families preserve a loved one's story,
+      share funeral information, receive condolences, keep photographs
+      and important documents together, and create a lasting place of
+      remembrance.
+    </p>
+
+    <div class="home-hero-actions">
+
+      <a
+        class="home-primary-cta"
+        href="{{ url_for('memorial_request') }}"
+      >
+        Create a Memorial
+      </a>
+
+      <a
+        class="home-whatsapp-cta"
+        href="https://wa.me/254763941520?text=Hello%20Elimara%20Technologies%2C%20I%20would%20like%20to%20create%20a%20digital%20memorial."
+        target="_blank"
+        rel="noopener"
+      >
+        Talk to us on WhatsApp
+      </a>
+
+    </div>
+
+    <p class="home-trust-line">
+      Family-controlled · Mobile-friendly · Built with care by Elimara Technologies
+    </p>
+
   </section>
 
+
   <section class="feature-grid">
-    <article><span>01</span><h2>One memorial link</h2><p>Share one simple page with relatives, friends and communities.</p></article>
-    <article><span>02</span><h2>Family controlled</h2><p>Every family receives a private dashboard to manage its own memorial.</p></article>
-    <article><span>03</span><h2>Memories preserved</h2><p>Collect tributes and photographs in one lasting remembrance space.</p></article>
+
+    <article>
+      <span>01</span>
+      <h2>One memorial link</h2>
+      <p>
+        Share one simple page with relatives, friends,
+        colleagues and communities.
+      </p>
+    </article>
+
+    <article>
+      <span>02</span>
+      <h2>Family controlled</h2>
+      <p>
+        Every family receives a private dashboard to manage
+        its memorial and community tributes.
+      </p>
+    </article>
+
+    <article>
+      <span>03</span>
+      <h2>Memories preserved</h2>
+      <p>
+        Keep photographs, tributes, funeral details and
+        memorial documents together in one respectful space.
+      </p>
+    </article>
+
   </section>
+
+
+  <section class="home-how-it-works">
+
+    <p class="eyebrow">
+      Simple process
+    </p>
+
+    <h2>
+      From request to a beautiful family memorial.
+    </h2>
+
+    <div class="home-process-grid">
+
+      <article>
+        <strong>1</strong>
+        <h3>Tell us about your loved one</h3>
+        <p>
+          Complete our guided memorial request form with the
+          information you already have.
+        </p>
+      </article>
+
+      <article>
+        <strong>2</strong>
+        <h3>We prepare the memorial</h3>
+        <p>
+          Elimara creates a private draft and gives the family
+          access to add photographs and documents.
+        </p>
+      </article>
+
+      <article>
+        <strong>3</strong>
+        <h3>Review and share</h3>
+        <p>
+          Once the family is happy, publish the memorial and
+          share the link with the community.
+        </p>
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <section class="home-final-cta">
+
+    <p class="eyebrow">
+      Elimara Technologies
+    </p>
+
+    <h2>
+      Create a memorial that feels personal, dignified and lasting.
+    </h2>
+
+    <p>
+      Start with the information you have today.
+      Missing photographs or documents can be added later.
+    </p>
+
+    <a
+      class="home-primary-cta"
+      href="{{ url_for('memorial_request') }}"
+    >
+      Start Memorial Request
+    </a>
+
+  </section>
+
 </main>
-<footer class="site-footer">Built with care · {{ current_year }}</footer>
+
+
+<footer class="site-footer elimara-site-footer">
+
+  <strong>
+    Elimara Memorials
+  </strong>
+
+  <span>
+    Developed with care by Elimara Technologies · {{ current_year }}
+  </span>
+
+  <div>
+    <a href="mailto:info@shulehub.org">
+      info@shulehub.org
+    </a>
+
+    <span>·</span>
+
+    <a
+      href="https://wa.me/254763941520"
+      target="_blank"
+      rel="noopener"
+    >
+      WhatsApp
+    </a>
+  </div>
+
+</footer>
+
 {% endblock %}
