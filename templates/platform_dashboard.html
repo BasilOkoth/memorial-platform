@@ -1,78 +1,692 @@
 {% extends "base.html" %}
-{% block title %}Platform Dashboard{% endblock %}
+
+{% block title %}
+Platform Dashboard · Elimara Memorials
+{% endblock %}
+
+{% block extra_head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='request.css') }}"
+>
+{% endblock %}
+
 {% block body %}
+
 <main class="shell">
+
   <header class="topbar">
+
     <div>
-      <p class="eyebrow">Platform owner</p>
-      <h1>Memorial dashboard</h1>
-      <p>Create a memorial and give the family their private dashboard password.</p>
+      <p class="eyebrow">
+        Elimara Technologies
+      </p>
+
+      <h1>
+        Memorial dashboard
+      </h1>
+
+      <p>
+        Manage incoming family requests, create memorials
+        and oversee your memorial portfolio.
+      </p>
     </div>
-    <form method="post" action="{{ url_for('platform_logout') }}">
-      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <button class="btn btn-light">Log out</button>
-    </form>
+
+    <div class="actions">
+
+      <a
+        class="btn btn-primary"
+        href="{{ url_for('memorial_request') }}"
+        target="_blank"
+      >
+        View request form
+      </a>
+
+      <form
+        method="post"
+        action="{{ url_for('platform_logout') }}"
+      >
+        <input
+          type="hidden"
+          name="_csrf_token"
+          value="{{ csrf_token() }}"
+        >
+
+        <button class="btn btn-light">
+          Log out
+        </button>
+      </form>
+
+    </div>
+
   </header>
 
-  <section class="dashboard-grid">
-    <article class="card">
-      <p class="eyebrow">New memorial</p>
-      <h2>Create memorial</h2>
-      <form class="form" method="post" action="{{ url_for('create_memorial') }}">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <label>Person's full name<input name="memorial_name" required placeholder="e.g. Mary Achieng Ouma"></label>
-        <label>Memorial link
-          <div class="prefix"><span>/m/</span><input name="slug" placeholder="mary-achieng-ouma"></div>
-        </label>
-        <label>Family password<input type="password" name="family_password" minlength="6" required></label>
-        <p class="hint">The memorial starts as a draft. The family can publish it after adding their content.</p>
-        <button class="btn btn-primary">Create memorial</button>
-      </form>
-    </article>
 
-    <article class="card memorial-list-card">
-      <div class="section-heading">
-        <div><p class="eyebrow">Portfolio</p><h2>{{ memorials|length }} memorial{% if memorials|length != 1 %}s{% endif %}</h2></div>
+  <!-- =====================================
+       INCOMING REQUESTS
+  ====================================== -->
+
+  <section class="card request-admin-card">
+
+    <div class="section-heading">
+
+      <div>
+        <p class="eyebrow">
+          Leads
+        </p>
+
+        <h2>
+          Incoming memorial requests
+        </h2>
+
+        <p class="hint">
+          New requests submitted through the public
+          Create a Memorial form appear here.
+        </p>
       </div>
 
-      {% if memorials %}
-        <div class="memorial-list">
-          {% for item in memorials %}
-          <section class="memorial-list-item">
-            <div class="memorial-list-main">
-              <strong>{{ item.memorial_name }}</strong>
-              <span>/m/{{ item.slug }}</span>
-              <small>{{ tribute_counts[item.id] }} tributes · {% if item.is_published %}Published{% else %}Draft{% endif %}</small>
-            </div>
-            <div class="actions">
-              <a class="btn btn-light" href="{{ url_for('public_memorial', slug=item.slug) }}" target="_blank">View</a>
-              <a class="btn btn-primary" href="{{ url_for('family_dashboard', slug=item.slug) }}">Family dashboard</a>
-            </div>
-            <details class="owner-tools">
-              <summary>Owner tools</summary>
-              <div class="owner-tools-grid">
-                <form method="post" action="{{ url_for('platform_toggle_publish', memorial_id=item.id) }}">
-                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-light">{% if item.is_published %}Unpublish{% else %}Publish{% endif %}</button>
-                </form>
-                <form method="post" action="{{ url_for('platform_reset_family_password', memorial_id=item.id) }}" class="inline-reset">
-                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                  <input type="password" name="new_password" minlength="6" placeholder="New family password" required>
-                  <button class="btn btn-light">Reset password</button>
-                </form>
-                <form method="post" action="{{ url_for('platform_delete_memorial', memorial_id=item.id) }}" onsubmit="return confirm('Delete this memorial and all its tributes/photos permanently?')">
-                  <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-danger">Delete memorial</button>
-                </form>
+      <span class="request-total">
+        {{ memorial_requests|length }}
+        request{% if memorial_requests|length != 1 %}s{% endif %}
+      </span>
+
+    </div>
+
+
+    {% if memorial_requests %}
+
+      <div class="request-admin-list">
+
+        {% for lead in memorial_requests %}
+
+          <article class="request-admin-item">
+
+            <div class="request-admin-top">
+
+              <div>
+
+                <div class="request-reference-line">
+
+                  <span class="request-status request-status-{{ lead.status }}">
+                    {{ lead.status|title }}
+                  </span>
+
+                  <small>
+                    {{ lead.reference_code }}
+                  </small>
+
+                </div>
+
+                <h3>
+                  {{ lead.display_name or lead.memorial_name }}
+                </h3>
+
+                <p>
+                  Requested by
+                  <strong>{{ lead.requester_name }}</strong>
+
+                  {% if lead.relationship %}
+                    · {{ lead.relationship }}
+                  {% endif %}
+                </p>
+
               </div>
+
+              <div class="request-date">
+                {{ lead.created_at.strftime("%d %b %Y") }}
+              </div>
+
+            </div>
+
+
+            <div class="request-details-grid">
+
+              <div>
+                <span>Phone / WhatsApp</span>
+                <strong>{{ lead.phone }}</strong>
+              </div>
+
+              <div>
+                <span>Email</span>
+                <strong>
+                  {{ lead.email or "Not provided" }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Preferred contact</span>
+                <strong>
+                  {{ lead.preferred_contact|title }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Theme</span>
+                <strong>
+                  {% if lead.preferred_theme == "choose" %}
+                    Elimara to choose
+                  {% else %}
+                    {{ lead.preferred_theme|title }}
+                  {% endif %}
+                </strong>
+              </div>
+
+              <div>
+                <span>Date of passing</span>
+                <strong>
+                  {{ lead.death_date or "Not provided" }}
+                </strong>
+              </div>
+
+              <div>
+                <span>Funeral</span>
+                <strong>
+                  {{ lead.funeral_date or "Not provided" }}
+                </strong>
+              </div>
+
+            </div>
+
+
+            {% if lead.memorial_message %}
+              <div class="request-note">
+                <span>Memorial message</span>
+                <p>{{ lead.memorial_message }}</p>
+              </div>
+            {% endif %}
+
+
+            {% if lead.biography %}
+              <details class="request-more">
+                <summary>
+                  View submitted life story
+                </summary>
+
+                <p>
+                  {{ lead.biography }}
+                </p>
+              </details>
+            {% endif %}
+
+
+            <div class="request-materials">
+
+              <span class="{% if lead.has_portrait %}is-ready{% endif %}">
+                Portrait
+              </span>
+
+              <span class="{% if lead.has_gallery %}is-ready{% endif %}">
+                Photos
+              </span>
+
+              <span class="{% if lead.has_eulogy %}is-ready{% endif %}">
+                Eulogy
+              </span>
+
+              <span class="{% if lead.has_programme %}is-ready{% endif %}">
+                Programme
+              </span>
+
+            </div>
+
+
+            <div class="request-admin-actions">
+
+              <a
+                class="btn btn-primary"
+                href="https://wa.me/{{ lead.phone|replace('+', '')|replace(' ', '')|replace('-', '') }}"
+                target="_blank"
+                rel="noopener"
+              >
+                Contact on WhatsApp
+              </a>
+
+
+              <form
+                method="post"
+                action="{{ url_for(
+                  'platform_request_status',
+                  request_id=lead.id
+                ) }}"
+              >
+
+                <input
+                  type="hidden"
+                  name="_csrf_token"
+                  value="{{ csrf_token() }}"
+                >
+
+                <select name="status">
+
+                  <option
+                    value="new"
+                    {% if lead.status == "new" %}selected{% endif %}
+                  >
+                    New
+                  </option>
+
+                  <option
+                    value="contacted"
+                    {% if lead.status == "contacted" %}selected{% endif %}
+                  >
+                    Contacted
+                  </option>
+
+                  <option
+                    value="converted"
+                    {% if lead.status == "converted" %}selected{% endif %}
+                  >
+                    Converted
+                  </option>
+
+                  <option
+                    value="closed"
+                    {% if lead.status == "closed" %}selected{% endif %}
+                  >
+                    Closed
+                  </option>
+
+                </select>
+
+                <button class="btn btn-light">
+                  Update status
+                </button>
+
+              </form>
+
+            </div>
+
+
+            {% if lead.status != "converted" %}
+
+              <div class="request-convert">
+
+                <div>
+                  <strong>
+                    Ready to onboard this family?
+                  </strong>
+
+                  <span>
+                    This creates a private draft memorial and
+                    pre-fills the information they submitted.
+                  </span>
+                </div>
+
+                <form
+                  method="post"
+                  action="{{ url_for(
+                    'platform_convert_request',
+                    request_id=lead.id
+                  ) }}"
+                >
+
+                  <input
+                    type="hidden"
+                    name="_csrf_token"
+                    value="{{ csrf_token() }}"
+                  >
+
+                  <input
+                    type="password"
+                    name="family_password"
+                    minlength="6"
+                    required
+                    placeholder="Set family password"
+                  >
+
+                  <button class="btn btn-primary">
+                    Convert to Memorial
+                  </button>
+
+                </form>
+
+              </div>
+
+            {% endif %}
+
+
+            <details class="owner-tools request-owner-tools">
+
+              <summary>
+                Request details & owner tools
+              </summary>
+
+              <div class="owner-tools-grid">
+
+                {% if lead.birth_date or lead.place_of_birth %}
+                  <p>
+                    <strong>Birth:</strong>
+                    {{ lead.birth_date or "Not provided" }}
+                    {% if lead.place_of_birth %}
+                      · {{ lead.place_of_birth }}
+                    {% endif %}
+                  </p>
+                {% endif %}
+
+                {% if lead.burial_venue %}
+                  <p>
+                    <strong>Venue:</strong>
+                    {{ lead.burial_venue }}
+                  </p>
+                {% endif %}
+
+                {% if lead.mpesa_number %}
+                  <p>
+                    <strong>M-Pesa:</strong>
+                    {{ lead.mpesa_number }}
+                    {% if lead.mpesa_name %}
+                      · {{ lead.mpesa_name }}
+                    {% endif %}
+                  </p>
+                {% endif %}
+
+                {% if lead.additional_requests %}
+                  <div class="request-note">
+                    <span>Additional requests</span>
+                    <p>{{ lead.additional_requests }}</p>
+                  </div>
+                {% endif %}
+
+                <form
+                  method="post"
+                  action="{{ url_for(
+                    'platform_delete_request',
+                    request_id=lead.id
+                  ) }}"
+                  onsubmit="return confirm('Delete this memorial request permanently?')"
+                >
+
+                  <input
+                    type="hidden"
+                    name="_csrf_token"
+                    value="{{ csrf_token() }}"
+                  >
+
+                  <button class="btn btn-danger">
+                    Delete request
+                  </button>
+
+                </form>
+
+              </div>
+
             </details>
-          </section>
-          {% endfor %}
-        </div>
-      {% else %}
-        <div class="empty">Your first family memorial will appear here.</div>
-      {% endif %}
-    </article>
+
+          </article>
+
+        {% endfor %}
+
+      </div>
+
+    {% else %}
+
+      <div class="empty">
+        No memorial requests yet. New requests will appear here.
+      </div>
+
+    {% endif %}
+
   </section>
+
+
+  <!-- =====================================
+       CREATE + PORTFOLIO
+  ====================================== -->
+
+  <section class="dashboard-grid dashboard-section-gap">
+
+    <article class="card">
+
+      <p class="eyebrow">
+        New memorial
+      </p>
+
+      <h2>
+        Create memorial manually
+      </h2>
+
+      <form
+        class="form"
+        method="post"
+        action="{{ url_for('create_memorial') }}"
+      >
+
+        <input
+          type="hidden"
+          name="_csrf_token"
+          value="{{ csrf_token() }}"
+        >
+
+        <label>
+          Person's full name
+
+          <input
+            name="memorial_name"
+            required
+            placeholder="e.g. Mary Achieng Ouma"
+          >
+        </label>
+
+        <label>
+          Memorial link
+
+          <div class="prefix">
+            <span>/m/</span>
+
+            <input
+              name="slug"
+              placeholder="mary-achieng-ouma"
+            >
+          </div>
+        </label>
+
+        <label>
+          Family password
+
+          <input
+            type="password"
+            name="family_password"
+            minlength="6"
+            required
+          >
+        </label>
+
+        <p class="hint">
+          Use this for direct clients who did not submit the
+          online request form. The memorial starts as a draft.
+        </p>
+
+        <button class="btn btn-primary">
+          Create memorial
+        </button>
+
+      </form>
+
+    </article>
+
+
+    <article class="card memorial-list-card">
+
+      <div class="section-heading">
+
+        <div>
+          <p class="eyebrow">
+            Portfolio
+          </p>
+
+          <h2>
+            {{ memorials|length }}
+            memorial{% if memorials|length != 1 %}s{% endif %}
+          </h2>
+        </div>
+
+      </div>
+
+
+      {% if memorials %}
+
+        <div class="memorial-list">
+
+          {% for item in memorials %}
+
+            <section class="memorial-list-item">
+
+              <div class="memorial-list-main">
+
+                <strong>
+                  {{ item.memorial_name }}
+                </strong>
+
+                <span>
+                  /m/{{ item.slug }}
+                </span>
+
+                <small>
+                  {{ tribute_counts[item.id] }}
+                  tributes ·
+
+                  {% if item.is_published %}
+                    Published
+                  {% else %}
+                    Draft
+                  {% endif %}
+                </small>
+
+              </div>
+
+
+              <div class="actions">
+
+                <a
+                  class="btn btn-light"
+                  href="{{ url_for(
+                    'public_memorial',
+                    slug=item.slug
+                  ) }}"
+                  target="_blank"
+                >
+                  View
+                </a>
+
+                <a
+                  class="btn btn-primary"
+                  href="{{ url_for(
+                    'family_dashboard',
+                    slug=item.slug
+                  ) }}"
+                >
+                  Family dashboard
+                </a>
+
+              </div>
+
+
+              <details class="owner-tools">
+
+                <summary>
+                  Owner tools
+                </summary>
+
+                <div class="owner-tools-grid">
+
+                  <form
+                    method="post"
+                    action="{{ url_for(
+                      'platform_toggle_publish',
+                      memorial_id=item.id
+                    ) }}"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="_csrf_token"
+                      value="{{ csrf_token() }}"
+                    >
+
+                    <button class="btn btn-light">
+                      {% if item.is_published %}
+                        Unpublish
+                      {% else %}
+                        Publish
+                      {% endif %}
+                    </button>
+
+                  </form>
+
+
+                  <form
+                    method="post"
+                    action="{{ url_for(
+                      'platform_reset_family_password',
+                      memorial_id=item.id
+                    ) }}"
+                    class="inline-reset"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="_csrf_token"
+                      value="{{ csrf_token() }}"
+                    >
+
+                    <input
+                      type="password"
+                      name="new_password"
+                      minlength="6"
+                      placeholder="New family password"
+                      required
+                    >
+
+                    <button class="btn btn-light">
+                      Reset password
+                    </button>
+
+                  </form>
+
+
+                  <form
+                    method="post"
+                    action="{{ url_for(
+                      'platform_delete_memorial',
+                      memorial_id=item.id
+                    ) }}"
+                    onsubmit="return confirm('Delete this memorial and all its tributes/photos permanently?')"
+                  >
+
+                    <input
+                      type="hidden"
+                      name="_csrf_token"
+                      value="{{ csrf_token() }}"
+                    >
+
+                    <button class="btn btn-danger">
+                      Delete memorial
+                    </button>
+
+                  </form>
+
+                </div>
+
+              </details>
+
+            </section>
+
+          {% endfor %}
+
+        </div>
+
+      {% else %}
+
+        <div class="empty">
+          Your first family memorial will appear here.
+        </div>
+
+      {% endif %}
+
+    </article>
+
+  </section>
+
 </main>
+
 {% endblock %}
