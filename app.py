@@ -2003,6 +2003,132 @@ def register_routes(app: Flask) -> None:
         )
 
     @app.post(
+        "/m/<slug>/family/settings/autosave"
+    )
+    @family_required
+    def autosave_family_settings(
+        slug: str,
+        memorial: Memorial,
+    ):
+        """Autosave ordinary memorial content without changing access or publish state."""
+
+        validate_csrf()
+
+        memorial.memorial_name = (
+            normalize_text(
+                request.form.get("memorial_name"),
+                160,
+            )
+            or memorial.memorial_name
+        )
+        memorial.birth_date = normalize_text(
+            request.form.get("birth_date"),
+            60,
+        )
+        memorial.death_date = normalize_text(
+            request.form.get("death_date"),
+            60,
+        )
+        memorial.hero_message = normalize_text(
+            request.form.get("hero_message"),
+            320,
+        )
+        memorial.biography = (
+            request.form.get("biography") or ""
+        ).strip()[:10000]
+
+        memorial.burial_date = normalize_text(
+            request.form.get("burial_date"),
+            160,
+        )
+        memorial.burial_venue = normalize_text(
+            request.form.get("burial_venue"),
+            260,
+        )
+        memorial.burial_map_url = safe_https(
+            request.form.get("burial_map_url")
+        )
+        memorial.livestream_url = safe_https(
+            request.form.get("livestream_url")
+        )
+
+        memorial.mpesa_number = normalize_text(
+            request.form.get("mpesa_number"),
+            50,
+        )
+        memorial.mpesa_name = normalize_text(
+            request.form.get("mpesa_name"),
+            140,
+        )
+        memorial.contribution_purpose = normalize_text(
+            request.form.get("contribution_purpose"),
+            220,
+        )
+        memorial.whatsapp_url = safe_https(
+            request.form.get("whatsapp_url")
+        )
+        memorial.family_acknowledgement = (
+            request.form.get("family_acknowledgement") or ""
+        ).strip()[:2500]
+
+        theme = request.form.get("theme", memorial.theme)
+        if theme in {"classic", "warm", "serene"}:
+            memorial.theme = theme
+
+        service_datetime = normalize_text(
+            request.form.get("service_datetime"),
+            40,
+        )
+        timezone_offset = request.form.get(
+            "service_timezone",
+            "+03:00",
+        )
+        allowed_offsets = {
+            "-05:00",
+            "-04:00",
+            "-03:00",
+            "-02:00",
+            "-01:00",
+            "+00:00",
+            "+01:00",
+            "+02:00",
+            "+03:00",
+            "+04:00",
+            "+05:00",
+        }
+        if timezone_offset not in allowed_offsets:
+            timezone_offset = "+03:00"
+
+        event = db.session.scalar(
+            select(MemorialEvent).where(
+                MemorialEvent.memorial_id == memorial.id
+            )
+        )
+
+        if service_datetime:
+            if event is None:
+                db.session.add(
+                    MemorialEvent(
+                        memorial_id=memorial.id,
+                        service_datetime=service_datetime,
+                        timezone_offset=timezone_offset,
+                    )
+                )
+            else:
+                event.service_datetime = service_datetime
+                event.timezone_offset = timezone_offset
+        elif event is not None:
+            db.session.delete(event)
+
+        db.session.commit()
+
+        return {
+            "ok": True,
+            "saved_at": datetime.now(timezone.utc).isoformat(),
+        }
+
+
+    @app.post(
         "/m/<slug>/family/settings"
     )
     @family_required
