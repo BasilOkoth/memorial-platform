@@ -11,12 +11,14 @@
   --mm-soft:#dedbe0;
 }
 .premium-memorial{
-  min-height:100vh;color:var(--mm-text);
+  min-height:100vh;
+  color:var(--mm-text);
   background:
     radial-gradient(circle at 15% 0%,rgba(133,73,80,.24),transparent 32%),
     radial-gradient(circle at 90% 20%,rgba(245,158,11,.08),transparent 26%),
     linear-gradient(145deg,#06070a,#111118 52%,#090c12);
-  overflow:hidden;
+  overflow-x:hidden;
+  overflow-y:visible;
 }
 .premium-memorial.theme-warm{--mm-maroon:#6a3b34;--mm-gold:#f3c779}
 .premium-memorial.theme-serene{--mm-maroon:#2f4b48;--mm-gold:#d5c98c}
@@ -24,7 +26,9 @@
 .premium-memorial a{text-decoration:none}
 
 .mm-hero{
-  position:relative;overflow:hidden;padding:72px 24px 0;
+  position:relative;
+  overflow:visible;
+  padding:72px 24px 0;
   background:
     linear-gradient(rgba(10,10,14,.48),rgba(10,10,14,.92)),
     radial-gradient(circle at center,var(--mm-maroon),#17171e 58%,#090a0e);
@@ -82,11 +86,22 @@
 .mm-preview{display:inline-block;margin-top:18px;padding:7px 11px;border-radius:999px;background:rgba(255,243,207,.12);color:#f8dc91;font-weight:850;font-size:.76rem}
 
 .mm-farewell-strip{
-  position:relative;z-index:2;width:min(1180px,calc(100% - 18px));margin:0 auto -25px;
-  display:grid;grid-template-columns:minmax(190px,1.2fr) auto minmax(190px,.9fr) auto;
-  align-items:center;gap:18px;padding:15px 18px;border:1px solid rgba(226,195,132,.25);
-  border-radius:18px;background:linear-gradient(135deg,rgba(21,20,19,.97),rgba(33,29,25,.94));
-  box-shadow:0 14px 34px rgba(0,0,0,.26),inset 0 1px 0 rgba(255,255,255,.04);
+  position:relative;
+  z-index:20;
+  width:min(1180px,calc(100% - 18px));
+  margin:0 auto -25px;
+  display:grid;
+  grid-template-columns:minmax(190px,1.2fr) auto minmax(190px,.9fr) auto;
+  align-items:center;
+  gap:22px;
+  min-height:96px;
+  padding:20px 24px;
+  border:1px solid rgba(226,195,132,.25);
+  border-radius:18px;
+  background:linear-gradient(135deg,rgba(21,20,19,.99),rgba(33,29,25,.98));
+  box-shadow:
+    0 18px 44px rgba(0,0,0,.38),
+    inset 0 1px 0 rgba(255,255,255,.04);
 }
 .mm-farewell-intro{display:grid;gap:3px}
 .mm-farewell-intro span{font-size:.58rem;font-weight:900;letter-spacing:.16em;color:#d9bd83}
