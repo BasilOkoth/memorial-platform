@@ -126,4 +126,12 @@ Request Received · Elimara Technologies
 
 </main>
 
+<script>
+try {
+  localStorage.removeItem("elimara_memorial_request_v1");
+} catch (error) {
+  // Local storage may be unavailable in some private browsing modes.
+}
+</script>
+
 {% endblock %}
