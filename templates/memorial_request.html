@@ -126,6 +126,21 @@ Create a Memorial · Elimara Technologies
 
     </div>
 
+    <div class="request-review-note" id="request-draft-status" aria-live="polite">
+      <strong id="request-draft-status-title">Draft protection is on</strong>
+      <p id="request-draft-status-copy">
+        Your progress is saved automatically on this device for up to 7 days.
+        If the page closes, return here and continue where you left off.
+      </p>
+      <button
+        class="request-back-button"
+        id="request-clear-draft"
+        type="button"
+      >
+        Clear saved draft
+      </button>
+    </div>
+
 
     <!-- =====================================
          STEP 1
@@ -1010,6 +1025,9 @@ Create a Memorial · Elimara Technologies
 
   form.classList.add("has-js");
 
+  const DRAFT_KEY = "elimara_memorial_request_v1";
+  const DRAFT_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
   const steps = Array.from(
     form.querySelectorAll(".request-step")
   );
@@ -1020,10 +1038,141 @@ Create a Memorial · Elimara Technologies
   const stepNumber = document.getElementById("request-step-number");
   const stepTitle = document.getElementById("request-step-title");
   const progressFill = document.getElementById("request-progress-fill");
+  const clearDraftButton = document.getElementById("request-clear-draft");
+  const draftTitle = document.getElementById("request-draft-status-title");
+  const draftCopy = document.getElementById("request-draft-status-copy");
 
   let current = 0;
+  let saveTimer = null;
+  let restored = false;
 
-  function showStep(index) {
+  const excludedNames = new Set([
+    "_csrf_token",
+    "website",
+    "consent"
+  ]);
+
+  function formatTime(timestamp) {
+    try {
+      return new Date(timestamp).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    } catch (error) {
+      return "just now";
+    }
+  }
+
+  function setDraftMessage(title, message) {
+    if (draftTitle) draftTitle.textContent = title;
+    if (draftCopy) draftCopy.textContent = message;
+  }
+
+  function collectValues() {
+    const values = {};
+
+    Array.from(form.elements).forEach((field) => {
+      if (!field.name || excludedNames.has(field.name)) return;
+      if (field.disabled) return;
+      if (field.type === "file") return;
+
+      if (field.type === "radio") {
+        if (field.checked) {
+          values[field.name] = field.value;
+        }
+        return;
+      }
+
+      if (field.type === "checkbox") {
+        values[field.name] = Boolean(field.checked);
+        return;
+      }
+
+      values[field.name] = field.value;
+    });
+
+    return values;
+  }
+
+  function saveDraft() {
+    try {
+      const draft = {
+        version: 1,
+        savedAt: Date.now(),
+        currentStep: current,
+        values: collectValues()
+      };
+
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+
+      setDraftMessage(
+        "Draft saved ✓",
+        `Saved on this device at ${formatTime(draft.savedAt)}. You can safely return later.`
+      );
+    } catch (error) {
+      setDraftMessage(
+        "Draft protection unavailable",
+        "This browser is not allowing local draft storage. Keep this page open until you submit the request."
+      );
+    }
+  }
+
+  function scheduleSave() {
+    window.clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(saveDraft, 300);
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+
+      const draft = JSON.parse(raw);
+
+      if (!draft.savedAt || Date.now() - draft.savedAt > DRAFT_MAX_AGE) {
+        localStorage.removeItem(DRAFT_KEY);
+        return;
+      }
+
+      const values = draft.values || {};
+
+      Object.entries(values).forEach(([name, value]) => {
+        const fields = Array.from(
+          form.querySelectorAll(`[name="${name}"]`)
+        );
+
+        fields.forEach((field) => {
+          if (field.type === "radio") {
+            field.checked = field.value === value;
+          } else if (field.type === "checkbox") {
+            field.checked = Boolean(value);
+          } else {
+            field.value = value ?? "";
+          }
+        });
+      });
+
+      const restoredStep = Number(draft.currentStep);
+      if (Number.isInteger(restoredStep)) {
+        current = Math.max(0, Math.min(restoredStep, steps.length - 1));
+      }
+
+      restored = true;
+
+      setDraftMessage(
+        "Saved draft restored ✓",
+        `We restored your unfinished request from ${formatTime(draft.savedAt)} on this device.`
+      );
+    } catch (error) {
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch (_) {}
+    }
+  }
+
+  function showStep(index, options = {}) {
+    const shouldSave = options.save !== false;
+
     current = Math.max(0, Math.min(index, steps.length - 1));
 
     steps.forEach((step, position) => {
@@ -1045,13 +1194,19 @@ Create a Memorial · Elimara Technologies
     nextButton.hidden = current === steps.length - 1;
     submitButton.hidden = current !== steps.length - 1;
 
-    window.scrollTo({
-      top: Math.max(
-        0,
-        form.getBoundingClientRect().top + window.scrollY - 25
-      ),
-      behavior: "smooth"
-    });
+    if (shouldSave) {
+      saveDraft();
+    }
+
+    if (!options.noScroll) {
+      window.scrollTo({
+        top: Math.max(
+          0,
+          form.getBoundingClientRect().top + window.scrollY - 25
+        ),
+        behavior: "smooth"
+      });
+    }
   }
 
   function validateCurrentStep() {
@@ -1078,7 +1233,61 @@ Create a Memorial · Elimara Technologies
     showStep(current - 1);
   });
 
-  showStep(0);
+  form.addEventListener("input", (event) => {
+    const field = event.target;
+    if (!field.name || excludedNames.has(field.name)) return;
+    scheduleSave();
+  });
+
+  form.addEventListener("change", (event) => {
+    const field = event.target;
+    if (!field.name || excludedNames.has(field.name)) return;
+    scheduleSave();
+  });
+
+  form.addEventListener("submit", () => {
+    window.clearTimeout(saveTimer);
+    saveDraft();
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting request...";
+  });
+
+  window.addEventListener("beforeunload", () => {
+    window.clearTimeout(saveTimer);
+    saveDraft();
+  });
+
+  if (clearDraftButton) {
+    clearDraftButton.addEventListener("click", () => {
+      const confirmed = window.confirm(
+        "Clear the saved memorial request draft on this device?"
+      );
+
+      if (!confirmed) return;
+
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch (_) {}
+
+      form.reset();
+      current = 0;
+      setDraftMessage(
+        "Draft cleared",
+        "Start a new request below. New changes will be saved automatically."
+      );
+      showStep(0, { save: false });
+    });
+  }
+
+  restoreDraft();
+  showStep(current, { save: false, noScroll: true });
+
+  if (!restored) {
+    setDraftMessage(
+      "Draft protection is on",
+      "Your progress is saved automatically on this device for up to 7 days."
+    );
+  }
 })();
 </script>
 
