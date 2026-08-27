@@ -90,7 +90,14 @@
         <p class="eyebrow">Memorial content</p>
         <h2>Story, funeral & family information</h2>
 
-        <form class="form" method="post" action="{{ url_for('save_family_settings', slug=memorial.slug) }}">
+        <div class="hint" id="autosave-status" aria-live="polite">
+          ✓ Memorial content saves automatically as you edit.
+        </div>
+        <p class="hint">
+          Password changes and publishing status are saved only when you press <strong>Save all changes</strong>.
+        </p>
+
+        <form class="form" id="family-settings-form" method="post" action="{{ url_for('save_family_settings', slug=memorial.slug) }}">
           <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
           <div class="form-grid">
@@ -196,4 +203,138 @@
     </section>
   </div>
 </main>
+
+<script>
+(() => {
+  const form = document.getElementById("family-settings-form");
+  const status = document.getElementById("autosave-status");
+  if (!form || !status) return;
+
+  const autosaveUrl = "{{ url_for('autosave_family_settings', slug=memorial.slug) }}";
+  const excludedNames = new Set([
+    "_csrf_token",
+    "new_family_password",
+    "is_published"
+  ]);
+
+  let timer = null;
+  let dirty = false;
+  let saving = false;
+  let saveAgain = false;
+  let manualSubmitting = false;
+
+  function isAutosaveField(field) {
+    return Boolean(
+      field &&
+      field.name &&
+      !excludedNames.has(field.name) &&
+      field.type !== "file"
+    );
+  }
+
+  function buildFormData() {
+    const data = new FormData(form);
+    data.delete("new_family_password");
+    data.delete("is_published");
+    return data;
+  }
+
+  function setStatus(message) {
+    status.textContent = message;
+  }
+
+  function formatSavedTime() {
+    return new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
+
+  async function saveNow() {
+    if (manualSubmitting || !dirty) return;
+
+    if (saving) {
+      saveAgain = true;
+      return;
+    }
+
+    saving = true;
+    dirty = false;
+    setStatus("Saving changes…");
+
+    try {
+      const response = await fetch(autosaveUrl, {
+        method: "POST",
+        body: buildFormData(),
+        credentials: "same-origin",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest"
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Autosave failed with ${response.status}`);
+      }
+
+      const payload = await response.json();
+      if (!payload.ok) {
+        throw new Error("Autosave was not confirmed");
+      }
+
+      setStatus(`✓ Saved automatically at ${formatSavedTime()}`);
+    } catch (error) {
+      dirty = true;
+      setStatus("⚠ Could not autosave. Press Save all changes before leaving this page.");
+    } finally {
+      saving = false;
+
+      if (saveAgain || dirty) {
+        saveAgain = false;
+        scheduleSave(700);
+      }
+    }
+  }
+
+  function scheduleSave(delay = 700) {
+    if (manualSubmitting) return;
+    dirty = true;
+    window.clearTimeout(timer);
+    setStatus("Unsaved changes…");
+    timer = window.setTimeout(saveNow, delay);
+  }
+
+  form.addEventListener("input", (event) => {
+    if (!isAutosaveField(event.target)) return;
+    scheduleSave(700);
+  });
+
+  form.addEventListener("change", (event) => {
+    if (!isAutosaveField(event.target)) return;
+    scheduleSave(200);
+  });
+
+  form.addEventListener("submit", () => {
+    manualSubmitting = true;
+    dirty = false;
+    window.clearTimeout(timer);
+    setStatus("Saving all changes…");
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (
+      document.visibilityState === "hidden" &&
+      dirty &&
+      !manualSubmitting
+    ) {
+      window.clearTimeout(timer);
+      try {
+        navigator.sendBeacon(autosaveUrl, buildFormData());
+        dirty = false;
+      } catch (error) {
+        // The regular Save all changes button remains available as fallback.
+      }
+    }
+  });
+})();
+</script>
 {% endblock %}
