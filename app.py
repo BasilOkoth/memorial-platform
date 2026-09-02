@@ -11,6 +11,8 @@ from functools import wraps
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import quote
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 from flask import (
@@ -256,7 +258,7 @@ def create_app() -> Flask:
         SQLALCHEMY_DATABASE_URI=database_uri(),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
-        MAX_CONTENT_LENGTH=75 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=100 * 1024 * 1024,
     )
 
     app.wsgi_app = ProxyFix(
@@ -445,7 +447,7 @@ def valid_pdf_upload(
 
     if (
         not data
-        or len(data) > 60 * 1024 * 1024
+        or len(data) > 80 * 1024 * 1024
         or not data.startswith(b"%PDF")
     ):
         return None
@@ -458,6 +460,125 @@ def valid_pdf_upload(
         "application/pdf",
         filename,
     )
+
+
+
+SUPABASE_DOCUMENT_MARKER = "application/x-supabase-storage-path"
+
+
+def supabase_storage_config() -> tuple[str, str, str]:
+    """Return Supabase URL, service-role key and document bucket."""
+    base_url = os.getenv("SUPABASE_URL", "").strip().rstrip("/")
+    service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    bucket = os.getenv(
+        "SUPABASE_DOCUMENT_BUCKET",
+        "memorial-documents",
+    ).strip()
+
+    if not base_url or not service_key or not bucket:
+        raise RuntimeError(
+            "Document storage is not configured. Set SUPABASE_URL, "
+            "SUPABASE_SERVICE_ROLE_KEY and SUPABASE_DOCUMENT_BUCKET."
+        )
+
+    return base_url, service_key, bucket
+
+
+def supabase_storage_upload(
+    object_path: str,
+    data: bytes,
+    content_type: str,
+) -> None:
+    """Upload a document directly to Supabase Storage via the REST API."""
+    base_url, service_key, bucket = supabase_storage_config()
+    encoded_bucket = quote(bucket, safe="")
+    encoded_path = quote(object_path, safe="/")
+    endpoint = (
+        f"{base_url}/storage/v1/object/"
+        f"{encoded_bucket}/{encoded_path}"
+    )
+
+    req = Request(
+        endpoint,
+        data=data,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {service_key}",
+            "apikey": service_key,
+            "Content-Type": content_type,
+            "x-upsert": "true",
+        },
+    )
+
+    try:
+        with urlopen(req, timeout=120) as response:
+            response.read()
+    except HTTPError as exc:
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Supabase Storage upload failed ({exc.code}): {details}"
+        ) from exc
+    except URLError as exc:
+        raise RuntimeError(
+            f"Could not reach Supabase Storage: {exc.reason}"
+        ) from exc
+
+
+def supabase_storage_delete(object_path: str) -> None:
+    """Delete one object from Supabase Storage."""
+    base_url, service_key, bucket = supabase_storage_config()
+    encoded_bucket = quote(bucket, safe="")
+    encoded_path = quote(object_path, safe="/")
+    endpoint = (
+        f"{base_url}/storage/v1/object/"
+        f"{encoded_bucket}/{encoded_path}"
+    )
+
+    req = Request(
+        endpoint,
+        method="DELETE",
+        headers={
+            "Authorization": f"Bearer {service_key}",
+            "apikey": service_key,
+        },
+    )
+
+    try:
+        with urlopen(req, timeout=60) as response:
+            response.read()
+    except HTTPError as exc:
+        # A missing old object should not break the memorial.
+        if exc.code == 404:
+            return
+        details = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(
+            f"Supabase Storage delete failed ({exc.code}): {details}"
+        ) from exc
+    except URLError as exc:
+        raise RuntimeError(
+            f"Could not reach Supabase Storage: {exc.reason}"
+        ) from exc
+
+
+def supabase_public_document_url(object_path: str) -> str:
+    """Build the public URL for a document in the configured public bucket."""
+    base_url, _, bucket = supabase_storage_config()
+    encoded_bucket = quote(bucket, safe="")
+    encoded_path = quote(object_path, safe="/")
+    return (
+        f"{base_url}/storage/v1/object/public/"
+        f"{encoded_bucket}/{encoded_path}"
+    )
+
+
+def storage_path_from_asset(asset: MediaAsset) -> str | None:
+    if asset.content_type != SUPABASE_DOCUMENT_MARKER:
+        return None
+
+    try:
+        return asset.data.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
 
 
 def get_document(
@@ -1718,6 +1839,19 @@ def register_routes(app: Flask) -> None:
         if not asset:
             abort(404)
 
+        storage_path = storage_path_from_asset(
+            asset
+        )
+
+        if storage_path:
+            return redirect(
+                supabase_public_document_url(
+                    storage_path
+                )
+            )
+
+        # Backward compatibility for older PDFs that were
+        # stored directly in PostgreSQL.
         return send_file(
             BytesIO(asset.data),
             mimetype="application/pdf",
@@ -2423,7 +2557,7 @@ def register_routes(app: Flask) -> None:
 
         if not upload:
             flash(
-                "Upload a valid PDF smaller than 60 MB.",
+                "Upload a valid PDF smaller than 80 MB.",
                 "warning",
             )
             return redirect(
@@ -2439,29 +2573,80 @@ def register_routes(app: Flask) -> None:
             filename,
         ) = upload
 
-        db.session.execute(
-            MediaAsset.__table__
-            .delete()
-            .where(
+        # Store large PDFs in Supabase Storage instead of
+        # inserting tens of megabytes into PostgreSQL.
+        safe_filename = re.sub(
+            r"[^A-Za-z0-9._-]+",
+            "-",
+            filename,
+        ).strip("-") or "document.pdf"
+
+        object_path = (
+            f"memorials/{memorial.id}/{kind}/"
+            f"{secrets.token_hex(8)}-{safe_filename}"
+        )
+
+        old_assets = db.session.scalars(
+            select(MediaAsset).where(
                 MediaAsset.memorial_id
                 == memorial.id,
                 MediaAsset.kind == kind,
             )
+        ).all()
+
+        supabase_storage_upload(
+            object_path,
+            data,
+            content_type,
         )
 
-        db.session.add(
-            MediaAsset(
-                memorial_id=memorial.id,
-                kind=kind,
-                filename=filename,
-                content_type=(
-                    content_type
-                ),
-                data=data,
+        try:
+            for old_asset in old_assets:
+                db.session.delete(old_asset)
+
+            db.session.add(
+                MediaAsset(
+                    memorial_id=memorial.id,
+                    kind=kind,
+                    filename=filename,
+                    content_type=(
+                        SUPABASE_DOCUMENT_MARKER
+                    ),
+                    # Reuse the existing LargeBinary column for
+                    # a tiny UTF-8 storage path. This avoids a
+                    # database migration and keeps old records
+                    # backward compatible.
+                    data=object_path.encode("utf-8"),
+                )
             )
-        )
 
-        db.session.commit()
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            try:
+                supabase_storage_delete(
+                    object_path
+                )
+            except Exception:
+                app.logger.exception(
+                    "Could not clean up Supabase object after failed DB commit."
+                )
+            raise
+
+        # Best-effort cleanup of previously stored Supabase docs.
+        for old_asset in old_assets:
+            old_path = storage_path_from_asset(
+                old_asset
+            )
+            if old_path:
+                try:
+                    supabase_storage_delete(
+                        old_path
+                    )
+                except Exception:
+                    app.logger.exception(
+                        "Could not delete replaced Supabase document."
+                    )
 
         flash(
             (
@@ -2505,8 +2690,22 @@ def register_routes(app: Flask) -> None:
         )
 
         if asset:
+            storage_path = storage_path_from_asset(
+                asset
+            )
+
             db.session.delete(asset)
             db.session.commit()
+
+            if storage_path:
+                try:
+                    supabase_storage_delete(
+                        storage_path
+                    )
+                except Exception:
+                    app.logger.exception(
+                        "Could not delete Supabase document object."
+                    )
 
             flash(
                 "Document removed.",
@@ -2908,7 +3107,7 @@ def register_routes(app: Flask) -> None:
             title="Upload too large",
             message=(
                 "This upload is too large. "
-                "PDF documents must be under 60 MB and "
+                "PDF documents must be under 80 MB and "
                 "each photo must be under 5 MB."
             ),
         ), 413
