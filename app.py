@@ -256,7 +256,7 @@ def create_app() -> Flask:
         SQLALCHEMY_DATABASE_URI=database_uri(),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
         SQLALCHEMY_ENGINE_OPTIONS={"pool_pre_ping": True},
-        MAX_CONTENT_LENGTH=25 * 1024 * 1024,
+        MAX_CONTENT_LENGTH=75 * 1024 * 1024,
     )
 
     app.wsgi_app = ProxyFix(
@@ -445,7 +445,7 @@ def valid_pdf_upload(
 
     if (
         not data
-        or len(data) > 20 * 1024 * 1024
+        or len(data) > 60 * 1024 * 1024
         or not data.startswith(b"%PDF")
     ):
         return None
@@ -2423,7 +2423,7 @@ def register_routes(app: Flask) -> None:
 
         if not upload:
             flash(
-                "Upload a valid PDF smaller than 20 MB.",
+                "Upload a valid PDF smaller than 60 MB.",
                 "warning",
             )
             return redirect(
@@ -2907,8 +2907,9 @@ def register_routes(app: Flask) -> None:
             "error.html",
             title="Upload too large",
             message=(
-                "Please upload smaller images. "
-                "Each photo should be under 5 MB."
+                "This upload is too large. "
+                "PDF documents must be under 60 MB and "
+                "each photo must be under 5 MB."
             ),
         ), 413
 
